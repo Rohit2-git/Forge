@@ -1,0 +1,17 @@
+fastapi
+uvicorn[standard]
+prisma
+pydantic
+google-genai
+pypdf
+python-docx
+python-dotenv
+python-multipart
+playwright
+stagehand
+pillow
+python-docx
+bcrypt
+pyjwt
+pydantic[email]
+asyncpg

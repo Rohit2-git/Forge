@@ -1,0 +1,657 @@
+import json
+import os
+import re
+import csv
+import io
+import time
+import asyncio
+from datetime import timedelta
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Request, Depends # type: ignore
+from typing import Optional, List, Any
+from app.schemas.generate import GenerateTestResponse
+from app.services.file_service import extract_text_from_file
+from google.genai import types # type: ignore
+from app.services.llm_service import (
+    discover_test_blueprints,
+    discover_all_blueprints,
+    expand_single_test_case,
+    generate_test_cases_from_images,
+    generate_test_cases_from_both_multi,
+    normalize_manual_test_case,
+)
+from app.routers.test_data import find_best_template, find_default_condition, get_condition_fields, resolve_template_values, get_batch_records
+from app.services.synthetic_data import pick_synthetic_record
+from app.auth.middleware import get_current_user, require_role
+from app.rate_limiter import check_generation, RateLimitExceeded
+from app.database import db
+
+router = APIRouter(prefix="/tests", tags=["generate"])
+
+SUPPORTED_IMAGE_TYPES = {
+    "image/png": ".png",
+    "image/jpeg": ".jpg",
+    "image/webp": ".webp"
+}
+
+# Maps role to visibility value stored on TestRun.
+# "all"             → admin-generated: visible to everyone with app access
+# "qa_and_reviewer" → qa_engineer-generated: visible to owner + any qa_reviewer
+# "owner_only"      → developer-generated: visible only to the creator
+_ROLE_VISIBILITY = {
+    "admin":       "all",
+    "qa_engineer": "qa_and_reviewer",
+    "developer":   "owner_only",
+}
+
+
+class _GenerationAborted(Exception):
+    pass
+
+
+# Same path llm_service.py's _append_token_log writes to — reading it back
+# here (filtered by this run's unique batch_label) is how the Tech Logs modal
+# gets REAL Gemini call data (model, tokens, whether the Pass 1 top-up fired)
+# instead of the previous hardcoded "kernel telemetry" flavor text.
+_TOKEN_LOG_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "token_usage_log.json")
+
+
+def _build_generation_trace(batch_label: str, pass1_time_sec: float, pass2_time_sec: float, pass1_meta: dict = None) -> dict:
+    events = []
+    try:
+        path = os.path.abspath(_TOKEN_LOG_PATH)
+        if os.path.exists(path):
+            with open(path, "r") as f:
+                all_entries = json.load(f)
+            events = [e for e in all_entries if e.get("batch_label") == batch_label]
+    except Exception as e:
+        print(f"[generate] Could not read token usage log for trace: {e}")
+
+    # Every Pass-1-style call (functional + the 4 category calls) logs its own
+    # "generation_pass1_<category>" type — functional logs plain "generation_pass1"
+    # for backward compat with the log entries already on disk. Broadened from an
+    # exact match on "generation_pass1" so category calls' token usage actually
+    # gets counted instead of silently dropped from the trace totals.
+    pass1_events = [
+        e for e in events
+        if e.get("type") == "generation_pass1" or (
+            str(e.get("type", "")).startswith("generation_pass1_")
+            and not str(e.get("type", "")).endswith("_topup")
+        )
+    ]
+    topup_events = [e for e in events if e.get("type") == "generation_pass1_topup"]
+    pass2_events = [e for e in events if e.get("type") == "generation_pass2"]
+
+    def _sum(entries, key):
+        return sum(e.get(key, 0) or 0 for e in entries)
+
+    model_name = events[0]["model"] if events else "gemini-3-flash-preview"
+    pass1_meta = pass1_meta or {}
+
+    return {
+        "model": model_name,
+        "pass1_time_sec": round(pass1_time_sec, 1),
+        "pass2_time_sec": round(pass2_time_sec, 1),
+        "total_time_sec": round(pass1_time_sec + pass2_time_sec, 1),
+        "topup_fired": bool(topup_events) or bool(pass1_meta.get("topup_fired")),
+        "pass1_input_tokens": _sum(pass1_events, "input_tokens"),
+        "pass1_output_tokens": _sum(pass1_events, "output_tokens"),
+        "topup_input_tokens": _sum(topup_events, "input_tokens"),
+        "topup_output_tokens": _sum(topup_events, "output_tokens"),
+        "pass2_input_tokens": _sum(pass2_events, "input_tokens"),
+        "pass2_output_tokens": _sum(pass2_events, "output_tokens"),
+        "total_tokens": _sum(events, "total_tokens"),
+        "pass2_call_count": len(pass2_events),
+        # AI-decided-count monitoring (task: "how many is appropriate" is now
+        # the model's call, bounded by MIN/MAX_BLUEPRINTS in llm_service.py —
+        # surfaced here so it's visible per-batch instead of a black box).
+        "ai_decided_count": pass1_meta.get("ai_decided_count"),
+        "feature_breakdown": pass1_meta.get("feature_breakdown"),
+        "min_bound": pass1_meta.get("min_bound"),
+        "max_bound": pass1_meta.get("max_bound"),
+        # Category split monitoring: how many blueprints landed in each of the
+        # 5 categories, and what each category was actually targeting (vs. its
+        # CATEGORY_CONFIG bounds) — this is the "check and see how many we
+        # create" visibility the category-split feature needs, per-category
+        # instead of just one overall number.
+        "category_breakdown": pass1_meta.get("category_breakdown"),
+        "category_targets": pass1_meta.get("category_targets"),
+        # Raw events so the frontend can render one real log line per Gemini
+        # call (type, model, tokens, timestamp) instead of fabricated copy.
+        "events": events,
+    }
+
+
+_TITLE_COLS = {
+    "title", "test case", "test case title", "name", "test name", "scenario", "test scenario",
+    # "Test scenarios" (plural) is the header OmniTestAI's own CSV export uses
+    # (matches the team's existing test-sheet format) — recognized here so a
+    # file exported from this app re-imports cleanly via /tests/import-csv.
+    "test scenarios",
+}
+_ID_COLS = {
+    "test case id", "id", "tc id", "case id", "test id", "tcid",
+    # "SL No" / "S.No" — the numbering column in OmniTestAI's own CSV export
+    # and common in externally-authored QA sheets. Same round-trip reasoning
+    # as test scenarios above.
+    "sl no", "sl. no", "sl no.", "s no", "s.no", "s.no.", "serial no", "serial number",
+}
+_DESC_COLS = {"test case description", "description", "test description", "summary", "objective"}
+_STEPS_COLS = {"steps", "test steps", "step", "action", "actions", "test case steps"}
+_EXPECTED_COLS = {"expected result", "expected", "expected outcome", "expected results"}
+
+
+async def _fetch_recent_titles_for_app(app_id: str, limit: int = 150) -> List[str]:
+    """
+    Cross-batch/cross-session dedup source: titles of test cases already
+    SAVED to the repository for this app. Combined in the /generate endpoint
+    with whatever titles the frontend sends for batches generated this
+    session but not yet saved, so Pass 1 avoids repeating either.
+    Best-effort — a lookup failure here shouldn't block generation.
+    """
+    try:
+        runs = await db.testrun.find_many(
+            where={"appId": str(app_id)},
+            order={"createdAt": "desc"},
+            take=20,
+        )
+        if not runs:
+            return []
+        run_ids = [r.id for r in runs]
+        results = await db.testresult.find_many(where={"runId": {"in": run_ids}})
+        titles = [r.title for r in results if r.title]
+        return titles[:limit]
+    except Exception as e:
+        print(f"[generate] Could not fetch recent titles for dedup: {e}")
+        return []
+
+
+def _normalize_header(h: str) -> str:
+    return re.sub(r'\s+', ' ', (h or "").strip().lower())
+
+
+def _parse_manual_csv(raw_text: str) -> List[dict]:
+    """
+    Groups CSV rows into test cases. Column names are matched flexibly
+    (case-insensitive, several common synonyms) so this isn't locked to one
+    exact export format. Supports two common shapes:
+
+    1. One row per test case, identified by an ID and/or Description column
+       (e.g. "Test Case ID" / "Test Case Description" - the standard
+       TestRail/Excel export shape), with all steps in a single multi-line
+       "Test Steps" cell.
+    2. One row per step, with a blank title/id/desc marking "same test case
+       as the row above" - the TestRail/Zephyr continuation-row pattern.
+
+    IMPORTANT: a row only counts as a "continuation of the previous row" when
+    the CSV actually HAS a title/id/desc column and that column is blank on
+    this row. If the CSV has no such column at all, every row is its own
+    test case - previously, CSVs whose only identifying columns were
+    "Test Case ID"/"Test Case Description" (not recognized as a title) fell
+    through to "blank title -> continuation", silently merging every row in
+    the file into a single test case.
+    """
+    reader = csv.DictReader(io.StringIO(raw_text))
+    if not reader.fieldnames:
+        return []
+
+    header_map = {}
+    for h in reader.fieldnames:
+        norm = _normalize_header(h)
+        if norm in _TITLE_COLS:
+            header_map['title'] = h
+        elif norm in _STEPS_COLS:
+            header_map['steps'] = h
+        elif norm in _EXPECTED_COLS:
+            header_map['expected'] = h
+        if norm in _ID_COLS:
+            header_map['id'] = h
+        if norm in _DESC_COLS:
+            header_map['desc'] = h
+
+    if 'steps' not in header_map:
+        raise ValueError("Could not find a Steps/Description column in the CSV.")
+
+    has_title_col = 'title' in header_map
+    has_id_or_desc = 'id' in header_map or 'desc' in header_map
+    # Do we have ANY column that can identify "this row starts a new test
+    # case"? If not, there's no such thing as a continuation row here.
+    has_identifying_col = has_title_col or has_id_or_desc
+
+    test_cases: List[dict] = []
+    current = None
+    for row in reader:
+        raw_title = (row.get(header_map.get('title', ''), '') or '').strip()
+        id_val = (row.get(header_map.get('id', ''), '') or '').strip()
+        desc_val = (row.get(header_map.get('desc', ''), '') or '').strip()
+        steps_val = (row.get(header_map['steps'], '') or '').strip()
+        expected_val = (row.get(header_map.get('expected', ''), '') or '').strip()
+
+        if not steps_val and not raw_title and not id_val and not desc_val:
+            continue
+
+        if has_title_col:
+            title_val = raw_title
+        elif has_id_or_desc:
+            # Combine whichever of ID/Description are present into a readable title.
+            title_val = " - ".join(v for v in (id_val, desc_val) if v)
+        else:
+            title_val = ""
+
+        is_continuation_row = has_identifying_col and not title_val and current is not None
+
+        if is_continuation_row:
+            if steps_val:
+                current["steps_text"] += ("\n" + steps_val)
+            if expected_val and not current["expected_result"]:
+                current["expected_result"] = expected_val
+        else:
+            current = {"title": title_val or "Untitled Test Case", "steps_text": steps_val, "expected_result": expected_val}
+            test_cases.append(current)
+
+    return test_cases
+
+
+def _is_image(file: UploadFile) -> bool:
+    if file.content_type in SUPPORTED_IMAGE_TYPES:
+        return True
+    return any(file.filename.lower().endswith(ext) for ext in [".png", ".jpg", ".jpeg", ".webp"])
+
+
+@router.post("/generate", response_model=GenerateTestResponse)
+async def generate_tests_from_document(
+    request: Request,
+    file: Optional[UploadFile] = File(None),
+    wireframes: Optional[List[UploadFile]] = File(None),
+    context_file: Optional[UploadFile] = File(None),
+    app_id: Optional[str] = Form(None),
+    # Cross-batch dedup: JSON-encoded array of test case titles already shown
+    # in THIS session's other batches for the same app (batches the user
+    # hasn't hit Save on yet, so they aren't in the DB for _fetch_recent_titles_for_app
+    # to find). Combined below with the DB-persisted titles for the app so
+    # Pass 1 avoids repeating scenarios regardless of whether they were saved.
+    existing_titles: Optional[str] = Form(None),
+    test_data_mode: Optional[str] = Form(None),
+    test_data_id: Optional[str] = Form(None),
+    # AI generation is gated server-side, not just hidden in the sidebar.
+    # Previously this endpoint only required get_current_user (any
+    # authenticated role), so qa_reviewer — who has no "AI Test Design" nav
+    # link — could still hit this directly via API. Restricting it here
+    # matches the roles the frontend's own ProtectedRoute already allows.
+    current_user=Depends(require_role("admin", "qa_engineer", "developer"))
+):
+    # Rate limit: 5 generations per user per 10 minutes
+    try:
+        check_generation(current_user.id)
+    except RateLimitExceeded as e:
+        raise HTTPException(
+            status_code=429,
+            detail=str(e),
+            headers={"Retry-After": str(e.retry_after)},
+        )
+
+    has_doc = file and file.filename
+    wireframes = [w for w in (wireframes or []) if w and w.filename]
+    has_wireframe = bool(wireframes)
+
+    if not has_doc and not has_wireframe:
+        raise HTTPException(status_code=400, detail="At least one input resource is required.")
+
+    knowledge_context = ""
+    if app_id:
+        try:
+            assets = await db.knowledgeasset.find_many(where={"appId": str(app_id)})
+            if assets:
+                knowledge_context = "\n\n[CRITICAL GROUNDING CONSTRAINTS - ADHERE TO THE FOLLOWING RULES]"
+                for asset in assets:
+                    knowledge_context += f"\n- {asset.name} (Context Rule): {asset.summary}"
+                    if asset.url:
+                        knowledge_context += f" (Reference Resource Link: {asset.url})"
+                knowledge_context += "\n[END OF GROUNDING CONSTRAINTS]\n"
+        except Exception as e:
+            print(f"Warning: Knowledge Base indexing skipped: {str(e)}")
+
+    content = None
+    if has_doc:
+        extracted_text = await extract_text_from_file(file)
+        if len(extracted_text.strip()) < 20:
+            raise HTTPException(status_code=400, detail="Requirements document is empty.")
+        content = f"{extracted_text}{knowledge_context}"
+
+    image_list = []  # list of (bytes, media_type) tuples — one per uploaded screenshot
+    if has_wireframe:
+        for wf in wireframes:
+            if not _is_image(wf):
+                raise HTTPException(status_code=400, detail=f"Invalid wireframe file: {wf.filename}")
+            wf_bytes = await wf.read()
+            wf_media_type = wf.content_type or "image/png"
+            image_list.append((wf_bytes, wf_media_type))
+
+    context = None
+    if context_file and context_file.filename:
+        try:
+            context = await extract_text_from_file(context_file)
+            if len(context.strip()) < 10:
+                context = None
+        except:
+            context = None
+
+    if has_wireframe and not has_doc and knowledge_context:
+        context = f"{context}\n{knowledge_context}" if context else knowledge_context
+
+
+    app_base_url = None
+    if app_id:
+        try:
+            app_record = await db.application.find_unique(where={"id": str(app_id)})
+            if app_record and app_record.url:
+                app_base_url = app_record.url.rstrip("/")
+        except Exception as e:
+            print(f"[generate] Could not fetch app URL: {e}")
+
+    source = "document"
+    if has_doc and has_wireframe:
+        source = "document + wireframe"
+    elif has_wireframe:
+        source = "wireframe"
+
+    filename = "Untitled Upload"
+    if has_doc and file is not None:
+        filename = file.filename
+    elif has_wireframe and wireframes:
+        filename = wireframes[0].filename
+
+    try:
+        import time as _time
+        batch_label = f"{filename} · {_time.strftime('%H:%M:%S')}"
+
+        # ── Cross-batch dedup titles: session-supplied (not-yet-saved batches)
+        # + DB-persisted (already-saved batches) for this app, combined and
+        # de-duplicated. This is what lets batch 2 avoid re-covering batch 1's
+        # scenarios instead of restarting from a blank slate every time. ──
+        session_titles: List[str] = []
+        if existing_titles:
+            try:
+                parsed_titles = json.loads(existing_titles)
+                if isinstance(parsed_titles, list):
+                    session_titles = [str(t) for t in parsed_titles if t]
+            except (json.JSONDecodeError, TypeError):
+                print("[generate] Could not parse existing_titles JSON — ignoring.")
+
+        db_titles: List[str] = []
+        if app_id:
+            db_titles = await _fetch_recent_titles_for_app(str(app_id))
+
+        combined_titles = list(dict.fromkeys(session_titles + db_titles))  # de-dupe, preserve order
+
+        active_mode, active_source_id = test_data_mode, test_data_id
+        if not active_mode and app_id:
+            active_mode, active_source_id = await find_default_condition(str(app_id))
+
+        # Explicit data-source selection (from the Generator's data-source picker)
+        # overrides the automatic per-test-case template matching below.
+        condition_fields = None
+        forced_template_values = None
+        forced_template_id = None
+        batch_records: list = []
+
+        if active_mode == "condition" and active_source_id:
+            condition_fields = await get_condition_fields(active_source_id)
+        elif active_mode == "template" and active_source_id:
+            # User explicitly picked one Data Template for the whole run — every
+            # test case gets these exact values, same as condition mode does.
+            forced_template_values = await resolve_template_values(active_source_id)
+            forced_template_id = active_source_id
+        elif active_mode == "batch" and active_source_id:
+            # User picked a bulk-generated batch — assign one distinct record
+            # per test case (round-robin) instead of repeating a single record,
+            # so the run actually gets data variety.
+            batch_records = await get_batch_records(active_source_id)
+
+        explicit_source_chosen = bool(condition_fields or forced_template_values or batch_records)
+        use_template_matching = (not explicit_source_chosen) and bool(app_id)
+
+        # Build image_parts list for Gemini — all screenshots passed together so the
+        # model sees every page at once before allocating blueprint slots.
+        image_parts = [
+            types.Part.from_bytes(data=b, mime_type=mt)
+            for b, mt in image_list
+        ] if image_list else None
+
+        _pass1_start = time.time()
+        pass1_result = await discover_all_blueprints(
+            content=content,
+            image_parts=image_parts,
+            context=context,
+            app_id=str(app_id) if app_id else None,
+            batch_label=batch_label,
+            existing_titles=combined_titles
+        )
+        pass1_time_sec = time.time() - _pass1_start
+
+        blueprints = pass1_result.get("blueprints")
+        if not blueprints or not isinstance(blueprints, list):
+            raise ValueError("Pass 1 discovery failed.")
+
+        if await request.is_disconnected():
+            raise _GenerationAborted()
+
+        # Raised from 4 — batches can now run into the hundreds of test cases
+        # across 5 categories instead of maxing out around 20, so a 4-wide
+        # semaphore would make a big batch take several minutes longer than
+        # it needs to. 8 is still conservative enough not to hammer the
+        # Gemini rate limit the way a fully-unbounded gather would.
+        semaphore = asyncio.Semaphore(8)
+
+        async def worker_wrapper(bp_node: dict, bp_index: int) -> dict:
+            async with semaphore:
+                await asyncio.sleep(0.15)
+
+                this_case_test_data = None
+                matched_template_id = None
+                matched_source_type = None
+
+                if condition_fields:
+                    this_case_test_data = pick_synthetic_record(condition_fields)
+                    matched_source_type = "condition"
+                    matched_template_id = active_source_id
+                elif forced_template_values:
+                    # Explicit single-template selection — every test case in this
+                    # run shares the same real record, same as before this feature.
+                    this_case_test_data = forced_template_values
+                    matched_source_type = "template"
+                    matched_template_id = forced_template_id
+                elif batch_records:
+                    # Round-robin: test case i gets records[i % N], so N records
+                    # spread realistically across however many test cases are
+                    # generated, wrapping around if there are more cases than records.
+                    this_case_test_data = batch_records[bp_index % len(batch_records)]
+                    matched_source_type = "batch"
+                    matched_template_id = active_source_id
+                elif use_template_matching:
+                    match = await find_best_template(
+                        app_id=str(app_id),
+                        title=bp_node.get("title", ""),
+                        objective=bp_node.get("objective", ""),
+                    )
+                    if match:
+                        this_case_test_data = match["fields"]
+                        matched_template_id = match["id"]
+                        matched_source_type = "template"
+
+                tc_result = await expand_single_test_case(
+                    bp_node,
+                    context=context,
+                    app_id=str(app_id) if app_id else None,
+                    batch_label=batch_label,
+                    base_url=app_base_url,
+                    test_data=this_case_test_data,
+                    image_parts=image_parts
+                )
+
+                tc_result["test_data_source_type"] = matched_source_type if this_case_test_data else None
+                tc_result["test_data_source_id"] = matched_template_id if this_case_test_data else None
+                tc_result["test_data_values"] = this_case_test_data
+                return tc_result
+
+        _pass2_start = time.time()
+        test_cases = await asyncio.gather(*[worker_wrapper(bp, i) for i, bp in enumerate(blueprints)])
+        pass2_time_sec = time.time() - _pass2_start
+
+    except _GenerationAborted:
+        raise HTTPException(status_code=499, detail="Generation cancelled by client.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Generation error: {str(e)}")
+
+    generation_trace = _build_generation_trace(batch_label, pass1_time_sec, pass2_time_sec, pass1_meta=pass1_result)
+
+    return GenerateTestResponse(
+        run_id=None,
+        filename=filename,
+        total=len(test_cases),
+        context_used=(context is not None or knowledge_context != ""),
+        source=source,
+        test_cases=test_cases,
+        generation_trace=generation_trace
+    )
+
+
+@router.post("/import-csv", response_model=GenerateTestResponse)
+async def import_manual_test_cases_csv(
+    request: Request,
+    file: UploadFile = File(...),
+    app_id: Optional[str] = Form(None),
+    current_user=Depends(get_current_user)
+):
+    """
+    Imports manually-written test cases from a CSV export. Steps that already
+    read as atomic/literal actions are kept verbatim at zero AI cost; only
+    genuinely high-level/descriptive steps get an AI rewrite pass — see
+    normalize_manual_test_case / _looks_already_executable in llm_service.py.
+    Returns the same shape as /tests/generate.
+    """
+    try:
+        check_generation(current_user.id)
+    except RateLimitExceeded as e:
+        raise HTTPException(
+            status_code=429,
+            detail=str(e),
+            headers={"Retry-After": str(e.retry_after)},
+        )
+
+    if not file.filename or not file.filename.lower().endswith('.csv'):
+        raise HTTPException(status_code=400, detail="Please upload a .csv file.")
+
+    raw_bytes = await file.read()
+    try:
+        raw_text = raw_bytes.decode('utf-8-sig')
+    except UnicodeDecodeError:
+        raw_text = raw_bytes.decode('latin-1')
+
+    try:
+        parsed_rows = _parse_manual_csv(raw_text)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    if not parsed_rows:
+        raise HTTPException(status_code=400, detail="No test cases found in the uploaded CSV.")
+
+    app_base_url = None
+    if app_id:
+        try:
+            app_record = await db.application.find_unique(where={"id": str(app_id)})
+            if app_record and app_record.url:
+                app_base_url = app_record.url.rstrip("/")
+        except Exception as e:
+            print(f"[import-csv] Could not fetch app URL: {e}")
+
+    import time as _time
+    batch_label = f"{file.filename} · {_time.strftime('%H:%M:%S')}"
+
+    semaphore = asyncio.Semaphore(4)
+
+    async def worker(row: dict) -> dict:
+        async with semaphore:
+            await asyncio.sleep(0.15)
+            tc_result = await normalize_manual_test_case(
+                title=row["title"],
+                raw_steps_text=row["steps_text"],
+                expected_result=row.get("expected_result") or None,
+                app_id=str(app_id) if app_id else None,
+                batch_label=batch_label,
+                base_url=app_base_url,
+            )
+            tc_result["test_data_source_type"] = None
+            tc_result["test_data_source_id"] = None
+            tc_result["test_data_values"] = None
+            return tc_result
+
+    if await request.is_disconnected():
+        raise HTTPException(status_code=499, detail="Import cancelled by client.")
+
+    test_cases = await asyncio.gather(*[worker(row) for row in parsed_rows])
+
+    return GenerateTestResponse(
+        run_id=None,
+        filename=file.filename,
+        total=len(test_cases),
+        context_used=False,
+        source="csv-import",
+        test_cases=test_cases
+    )
+
+
+@router.post("/save")
+async def save_test_cases_to_repo(
+    request: Request,
+    current_user=Depends(get_current_user)
+):
+    """
+    Persists a reviewed batch to the DB.
+    Stamps createdByUserId, createdByRole, visibility based on who is saving.
+
+    Visibility matrix:
+      admin       → "all"              visible to every role with app access
+      qa_engineer → "qa_and_reviewer"  visible to this qa_engineer + all qa_reviewers
+      developer   → "owner_only"       visible only to this developer
+    """
+    payload = await request.json()
+    filename = payload.get("filename", "Untitled")
+    batch_name = (payload.get("batch_name") or "").strip() or None
+    app_id = payload.get("app_id")
+    test_cases = payload.get("test_cases", [])
+
+    if not test_cases:
+        raise HTTPException(status_code=400, detail="No test cases provided.")
+
+    visibility = _ROLE_VISIBILITY.get(current_user.role, "owner_only")
+    display_label = batch_name or filename
+
+    try:
+        async with db.tx(timeout=timedelta(seconds=15)) as transaction:
+            run = await transaction.testrun.create(data={
+                "filename": filename,
+                "batchName": batch_name,
+                "total": len(test_cases),
+                "status": "completed",
+                "appId": str(app_id) if app_id else None,
+                "createdByUserId": current_user.id,
+                "createdByRole": current_user.role,
+                "visibility": visibility,
+            })
+            for tc in test_cases:
+                await transaction.testresult.create(data={
+                    "runId": run.id,
+                    "title": tc.get("title", "Untitled Test Case"),
+                    "steps": json.dumps(tc.get("steps", [])) if isinstance(tc.get("steps"), list) else tc.get("steps", "[]"),
+                    "expectedResult": tc.get("expected_result", "Passed"),
+                    "type": tc.get("type", "positive"),
+                    "category": tc.get("category") or "functional",
+                    "featureArea": tc.get("feature_area"),
+                    "testDataSourceType": tc.get("test_data_source_type"),
+                    "testDataSourceId": tc.get("test_data_source_id"),
+                    "testDataValues": json.dumps(tc["test_data_values"]) if tc.get("test_data_values") else None
+                })
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save: {str(e)}")
+
+    return {"run_id": run.id, "saved": len(test_cases), "batch_name": display_label}

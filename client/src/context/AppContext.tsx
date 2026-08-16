@@ -1,0 +1,436 @@
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import type { Application, TestCase, ExecutionRun, KnowledgeAsset } from '../types';
+import { apiService } from '../services/api';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
+interface AppContextType {
+  applications: Application[];
+  allApplications: Application[]; // admin/qa_engineer see all
+  testCases: TestCase[];
+  refreshTestCases: () => Promise<void>;
+  history: ExecutionRun[];
+  knowledgeAssets: KnowledgeAsset[];
+  activeAppId: string | null;
+  setActiveAppId: (id: string | null) => void;
+  addApplication: (app: Omit<Application, 'id' | 'createdAt'>) => Application;
+  updateApplication: (app: Application) => void;
+  deleteApplication: (id: string) => void;
+  addTestCase: (tc: Omit<TestCase, 'id' | 'createdAt'>) => TestCase;
+  updateTestCase: (tc: TestCase) => void;
+  deleteTestCase: (id: string) => void;
+  addExecutionRun: (run: ExecutionRun) => void;
+  addKnowledgeAsset: (asset: Omit<KnowledgeAsset, 'id' | 'createdAt'>) => KnowledgeAsset;
+  deleteKnowledgeAsset: (id: string) => void;
+  generationBatches: any[];
+  setGenerationBatches: React.Dispatch<React.SetStateAction<any[]>>;
+  executionResults: Record<string, Record<string, any>>;
+  setExecutionResults: React.Dispatch<React.SetStateAction<Record<string, Record<string, any>>>>;
+  activeExecutionId: string | null;
+  setActiveExecutionId: React.Dispatch<React.SetStateAction<string | null>>;
+  isSuiteRunning: boolean;
+  setIsSuiteRunning: React.Dispatch<React.SetStateAction<boolean>>;
+  isNLRunning: boolean;
+  setIsNLRunning: React.Dispatch<React.SetStateAction<boolean>>;
+  isGenerationRunning: boolean;
+  setIsGenerationRunning: React.Dispatch<React.SetStateAction<boolean>>;
+  generatorFormState: {
+    mode: string;
+    sourceInput: string;
+    batchName: string;
+    // testCaseCount removed — the AI decides test case count now (see
+    // Generator.tsx / llm_service.py's MIN_BLUEPRINTS/MAX_BLUEPRINTS), there's
+    // no longer a user-chosen value here to persist.
+    stagedFiles: Array<{ id: string; name: string; type: string; rawBase64?: string }>;
+  };
+  setGeneratorFormState: React.Dispatch<React.SetStateAction<{
+    mode: string;
+    sourceInput: string;
+    batchName: string;
+    stagedFiles: Array<{ id: string; name: string; type: string; rawBase64?: string }>;
+  }>>;
+}
+
+const AppContext = createContext<AppContextType | undefined>(undefined);
+
+export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // No login/roles in this build — everyone shares one open-access account,
+  // so there's no per-role restriction or gating to apply here.
+  const authHeaders = { 'Content-Type': 'application/json' };
+
+  const [allApplications, setAllApplications] = useState<Application[]>(() => {
+    const saved = localStorage.getItem('ai_agent_applications');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [applications, setApplications] = useState<Application[]>([]);
+
+  // Fetch the real application list from the DB. /auth/apps already scopes
+  // correctly server-side: qa_reviewer gets only their assigned apps, every
+  // other role gets the full list. localStorage is just the instant-load
+  // cache shown before this fetch resolves — the DB response is what
+  // actually replaces it, so apps stay consistent across browsers/devices.
+  useEffect(() => {
+    const syncAndFetch = async () => {
+      // One-time migration: push any apps that exist locally but were
+      // created before DB-sync existed, so they aren't silently dropped
+      // once the DB response below replaces local state.
+      if (allApplications.length > 0) {
+        try {
+          const existingRes = await fetch(`${API_BASE}/auth/apps`, { headers: authHeaders, credentials: 'include' });
+          const existingApps: Application[] = existingRes.ok ? await existingRes.json() : [];
+          const existingIds = new Set(existingApps.map(a => a.id));
+          const localOnly = allApplications.filter(a => !existingIds.has(a.id));
+          for (const app of localOnly) {
+            await fetch(`${API_BASE}/auth/apps`, {
+              method: 'POST', headers: authHeaders, credentials: 'include',
+              body: JSON.stringify({ id: app.id, name: app.name, description: app.description || '', platform: app.platform, url: app.url, status: app.status || 'active' })
+            }).catch(() => { });
+          }
+        } catch {
+          // If this migration step fails, fall through to the fetch below anyway.
+        }
+      }
+
+      fetch(`${API_BASE}/auth/apps`, { headers: authHeaders, credentials: 'include' })
+        .then(r => r.ok ? r.json() : null)
+        .then((dbApps: Application[] | null) => {
+          if (dbApps === null) return; // fetch failed — keep whatever localStorage had
+          setAllApplications(dbApps);
+          setApplications(dbApps);
+        })
+        .catch(() => { /* keep localStorage fallback on network failure */ });
+    };
+
+    syncAndFetch();
+  }, []);
+
+  // ── Test cases: DB is the sole source of truth ────────────────────────
+  // Deliberately NOT hydrated from localStorage. These counts are scoped
+  // per user/role/app-access on the backend (see results.py), and this key
+  // is a plain browser-wide string with no per-user namespace — hydrating
+  // from it on mount showed whatever a DIFFERENT, previously-logged-in user
+  // on this same browser had cached (e.g. a QA Reviewer with zero assigned
+  // apps briefly/persistently seeing another user's real 9 test cases).
+  // Starting empty and letting fetchFromDB populate it is slightly slower
+  // to first paint but can never leak another account's data.
+  const [testCases, setTestCases] = useState<TestCase[]>([]);
+
+  // ── History: same reasoning as testCases above ────────────────────────
+  const [history, setHistory] = useState<ExecutionRun[]>([]);
+
+  // ── Knowledge assets: same reasoning as testCases above ───────────────
+  const [knowledgeAssets, setKnowledgeAssets] = useState<KnowledgeAsset[]>([]);
+
+  const [activeAppId, setActiveAppId] = useState<string | null>(() => {
+    const saved = localStorage.getItem('ai_agent_active_appid');
+    if (saved) return saved;
+    return allApplications.length > 0 ? allApplications[0].id : null;
+  });
+
+  // ── Fetch test cases + execution history from DB on mount ─────────────
+  // Exposed so callers (e.g. Generator after Save to Repo) can force a refresh
+  // without reloading the page. Defined outside the useEffect so it's reachable.
+  // Immediately drop any previous session's account-scoped state the moment
+  // the logged-in role changes (e.g. logout/login in the same tab without a
+  // full page reload) — so a new user never even briefly sees whatever was
+  // in memory for whoever was logged in before. The DB fetch below then
+  // repopulates from scratch, scoped correctly to the new user.
+  // One-time cleanup: these three keys were written by the pre-fix version of
+  // this file and may still hold another user's leaked data in browsers that
+  // already hit this bug. They're no longer used — remove them outright so
+  // nothing lingers, rather than leaving dead but sensitive data sitting in
+  // localStorage indefinitely.
+  useEffect(() => {
+    localStorage.removeItem('ai_agent_testcases');
+    localStorage.removeItem('ai_agent_history');
+    localStorage.removeItem('ai_agent_knowledge_assets');
+  }, []);
+
+  const fetchFromDB = async () => {
+    try {
+      const runsRes = await fetch(`${API_BASE}/results/`, { headers: authHeaders, credentials: 'include' });
+      if (!runsRes.ok) return;
+      const runsData = await runsRes.json();
+      const runs: any[] = runsData.runs || [];
+
+      const allTestCases: TestCase[] = [];
+      const allHistory: ExecutionRun[] = [];
+
+      await Promise.all(runs.map(async (run: any) => {
+        // Skip NL execution runs — they are not generated test cases
+        const filename: string = run.filename || '';
+        if (filename.startsWith('NL:') || filename.startsWith('Execute:')) return;
+
+        try {
+          const detailRes = await fetch(`${API_BASE}/results/${run.run_id}`, { headers: authHeaders, credentials: 'include' });
+          if (detailRes.ok) {
+            const detail = await detailRes.json();
+            const runAppId = detail.app_id || run.app_id;
+            if (!runAppId) return;
+
+            detail.test_cases?.forEach((tc: any) => {
+              if (tc.type === 'natural_language' || tc.type === 'execution') return;
+              allTestCases.push({
+                id: `db-${run.run_id}-${tc.id}`,
+                appId: runAppId,
+                title: tc.title,
+                description: tc.expected_result || '',
+                steps: Array.isArray(tc.steps)
+                  ? tc.steps.map((s: any, i: number) => ({
+                    id: `step-${i}`,
+                    instruction: typeof s === 'string' ? s : s.instruction || s,
+                    expected: tc.expected_result || ''
+                  }))
+                  : [],
+                priority: 'medium',
+                source: 'ai-jira',
+                section: detail.display_label || detail.filename || 'Generated',
+                category: (tc.category || 'functional') as TestCase['category'],
+                featureArea: tc.feature_area,
+                createdAt: tc.created_at || run.created_at || new Date().toISOString()
+              });
+            });
+          }
+
+          const execRes = await fetch(`${API_BASE}/results/${run.run_id}/execution`, { headers: authHeaders, credentials: 'include' });
+          if (execRes.ok) {
+            const execData = await execRes.json();
+            execData.executions?.forEach((exec: any) => {
+              allHistory.push({
+                id: `exec-${exec.execution_run_id}`,
+                appId: activeAppId || 'unknown',
+                testCaseIds: [],
+                status: exec.summary.failed > 0 ? 'failed' : 'passed',
+                logs: [],
+                metrics: {
+                  // Was hardcoded to 0 regardless of backend data — combined
+                  // with the backend never having computed/stored a duration
+                  // at all (now fixed in execute.py + schema.prisma), this is
+                  // why Analytics' "Execution Duration" chart always showed
+                  // empty. Runs from before that fix is deployed will still
+                  // show 0/blank here since they genuinely have no recorded
+                  // duration to backfill from.
+                  durationMs: exec.duration_ms || 0,
+                  stepsCount: exec.summary.executed || 0,
+                  passedCount: exec.summary.passed || 0,
+                },
+                executedAt: exec.executed_at || new Date().toISOString()
+              });
+            });
+          }
+        } catch { }
+      }));
+
+      // Always update — even if allTestCases is empty (e.g. first save just cleared
+      // stale local state). The old `if (length > 0)` guard was swallowing first saves.
+      setTestCases(prev => {
+        const dbIds = new Set(allTestCases.map(tc => tc.id));
+        const localOnly = prev.filter(tc => !tc.id.startsWith('db-') && !dbIds.has(tc.id));
+        return [...allTestCases, ...localOnly];
+      });
+      setHistory(prev => {
+        const dbIds = new Set(allHistory.map(h => h.id));
+        const localOnly = prev.filter(h => !h.id.startsWith('exec-') && !dbIds.has(h.id));
+        return [...allHistory, ...localOnly];
+      });
+    } catch (err) {
+      console.error('DB sync error:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchFromDB();
+  }, [activeAppId]);
+
+  // Knowledge Space isn't part of this build — knowledgeAssets stays empty.
+  // The state/handlers are kept as harmless no-ops purely so components that
+  // still destructure them from useApp() don't need extra changes.
+
+  const [generationBatches, setGenerationBatches] = useState<any[]>(() => {
+    const saved = localStorage.getItem('ai_agent_temp_batches');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // executionResults is session-only — Executor.tsx loads from DB on mount.
+  const [executionResults, setExecutionResults] = useState<Record<string, Record<string, any>>>({});
+
+  const [activeExecutionId, setActiveExecutionId] = useState<string | null>(null);
+  const [isSuiteRunning, setIsSuiteRunning] = useState(false);
+  const [isNLRunning, setIsNLRunning] = useState(false);
+  const [isGenerationRunning, setIsGenerationRunning] = useState(false);
+
+  // ⚡ COMPREHENSIVE RECOVERY FALLBACK STATE MAP
+  const [generatorFormState, setGeneratorFormState] = useState(() => {
+    try {
+      const saved = localStorage.getItem('ai_agent_generator_form');
+      // Old saved state from before this field was removed may still have a
+      // stray testCaseCount key in localStorage — harmless, it just won't
+      // match the type above and is never read again. Not worth writing
+      // migration code to strip it out.
+      return saved ? JSON.parse(saved) : {
+        mode: 'jira',
+        sourceInput: '',
+        batchName: '',
+        stagedFiles: []
+      };
+    } catch {
+      return {
+        mode: 'jira',
+        sourceInput: '',
+        batchName: '',
+        stagedFiles: []
+      };
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('ai_agent_applications', JSON.stringify(allApplications));
+    } catch (e) {
+      console.warn('applications exceeded localStorage quota — clearing local cache (data is safe in the database):', e);
+      try { localStorage.removeItem('ai_agent_applications'); } catch { }
+    }
+  }, [allApplications]);
+  // testCases, history, and knowledgeAssets are no longer written to
+  // localStorage — they're account-scoped data with no per-user namespace,
+  // and persisting them here is exactly what caused one user's counts to
+  // leak into another user's session on the same browser. The DB is the
+  // sole source of truth for these now; see fetchFromDB and the knowledge
+  // asset effect above.
+  useEffect(() => { if (activeAppId) localStorage.setItem('ai_agent_active_appid', activeAppId); }, [activeAppId]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('ai_agent_temp_batches', JSON.stringify(generationBatches));
+    } catch (e) {
+      console.warn('generationBatches exceeded localStorage quota — clearing local cache:', e);
+      try { localStorage.removeItem('ai_agent_temp_batches'); } catch { }
+    }
+  }, [generationBatches]);
+
+  useEffect(() => {
+    try { localStorage.setItem('ai_agent_generator_form', JSON.stringify(generatorFormState)); } catch { }
+  }, [generatorFormState]);
+
+  // executionResults intentionally NOT persisted to localStorage —
+  // screenshots and videos are large and the DB + /media/ static files
+  // are the source of truth. Executor.tsx loads results from DB on mount.
+
+  const addApplication = (appData: Omit<Application, 'id' | 'createdAt'>) => {
+    const newApp: Application = { ...appData, id: `app-${Date.now()}`, createdAt: new Date().toISOString() };
+    setAllApplications(prev => [newApp, ...prev]);
+    setApplications(prev => [newApp, ...prev]);
+    if (!activeAppId) setActiveAppId(newApp.id);
+    // Sync to DB. IMPORTANT: fetch() only rejects on a network-level failure
+    // — a 401/403/500 response still resolves normally, so a bare
+    // `.catch(console.error)` here silently swallows real save failures
+    // (e.g. session expired). That looked exactly like "I added an app, it
+    // showed up, then vanished after I refreshed" — it was never actually
+    // saved, and the next GET /auth/apps on reload replaced it with the
+    // real (app-less) DB state. Checking res.ok and rolling back the
+    // optimistic add on failure makes that failure visible instead.
+    fetch(`${API_BASE}/auth/apps`, {
+      method: 'POST', headers: authHeaders, credentials: 'include',
+      body: JSON.stringify({ id: newApp.id, name: newApp.name, description: newApp.description, platform: newApp.platform, url: newApp.url, status: newApp.status })
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          const detail = await res.text().catch(() => '');
+          throw new Error(`Save failed (${res.status}): ${detail || res.statusText}`);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to save application to the database — rolling back:', err);
+        setAllApplications(prev => prev.filter(a => a.id !== newApp.id));
+        setApplications(prev => prev.filter(a => a.id !== newApp.id));
+        if (activeAppId === newApp.id) setActiveAppId(null);
+        alert(`Couldn't save "${newApp.name}" — it was not added. ${err instanceof Error ? err.message : ''}`.trim());
+      });
+    return newApp;
+  };
+
+  const updateApplication = (updatedApp: Application) => {
+    setAllApplications(prev => prev.map(app => app.id === updatedApp.id ? updatedApp : app));
+    setApplications(prev => prev.map(app => app.id === updatedApp.id ? updatedApp : app));
+  };
+
+  const deleteApplication = (id: string) => {
+    setAllApplications(prev => prev.filter(app => app.id !== id));
+    setApplications(prev => prev.filter(app => app.id !== id));
+    setTestCases(prev => prev.filter(tc => tc.appId !== id));
+    setHistory(prev => prev.filter(run => run.appId !== id));
+    setKnowledgeAssets(prev => prev.filter(asset => asset.appId !== id));
+    if (activeAppId === id) {
+      const remaining = allApplications.filter(app => app.id !== id);
+      setActiveAppId(remaining.length > 0 ? remaining[0].id : null);
+    }
+    // Sync deletion to DB — surface failures instead of swallowing them,
+    // same reasoning as addApplication above.
+    fetch(`${API_BASE}/auth/apps/${id}`, { method: 'DELETE', headers: authHeaders, credentials: 'include' })
+      .then((res) => {
+        if (!res.ok) throw new Error(`Delete failed (${res.status})`);
+      })
+      .catch((err) => {
+        console.error('Failed to delete application from the database:', err);
+        alert(`Couldn't delete that application from the server — it may reappear after refresh. ${err instanceof Error ? err.message : ''}`.trim());
+      });
+  };
+
+  const addTestCase = (tcData: Omit<TestCase, 'id' | 'createdAt'>) => {
+    const newTestCase: TestCase = {
+      ...tcData,
+      id: `tc-${Date.now()}-${Math.floor(Math.random() * 100000)}`,
+      createdAt: new Date().toISOString()
+    };
+    setTestCases(prev => [...prev, newTestCase]);
+    return newTestCase;
+  };
+
+  const updateTestCase = (updatedTestCase: TestCase) => {
+    setTestCases(prev => prev.map(tc => tc.id === updatedTestCase.id ? updatedTestCase : tc));
+  };
+
+  const deleteTestCase = async (id: string) => {
+    setTestCases(prev => prev.filter(tc => tc.id !== id));
+    const numericId = parseInt(id.replace(/^\D+/g, ''), 10);
+    if (!isNaN(numericId)) {
+      try {
+        await apiService.deleteRunRecord(numericId);
+      } catch (err) {
+        console.error("Backend single sync delete execution failure context:", err);
+      }
+    }
+  };
+
+  const addExecutionRun = (run: ExecutionRun) => { setHistory(prev => [run, ...prev]); };
+  const addKnowledgeAsset = (assetData: Omit<KnowledgeAsset, 'id' | 'createdAt'>) => {
+    const newAsset: KnowledgeAsset = { ...assetData, id: `kb-${Date.now()}`, createdAt: new Date().toISOString() };
+    setKnowledgeAssets(prev => [newAsset, ...prev]);
+    return newAsset;
+  };
+  const deleteKnowledgeAsset = (id: string) => { setKnowledgeAssets(prev => prev.filter(asset => asset.id !== id)); };
+
+  return (
+    <AppContext.Provider value={{
+      applications, allApplications, testCases, refreshTestCases: fetchFromDB, history, knowledgeAssets, activeAppId, setActiveAppId,
+      addApplication, updateApplication, deleteApplication, addTestCase, updateTestCase,
+      deleteTestCase, addExecutionRun, addKnowledgeAsset, deleteKnowledgeAsset,
+      generationBatches, setGenerationBatches,
+      executionResults, setExecutionResults,
+      activeExecutionId, setActiveExecutionId,
+      isSuiteRunning, setIsSuiteRunning,
+      isNLRunning, setIsNLRunning,
+      isGenerationRunning, setIsGenerationRunning,
+      generatorFormState, setGeneratorFormState
+    }}>
+      {children}
+    </AppContext.Provider>
+  );
+};
+
+export const useApp = () => {
+  const context = useContext(AppContext);
+  if (!context) throw new Error('useApp must be used within an AppProvider');
+  return context;
+};
