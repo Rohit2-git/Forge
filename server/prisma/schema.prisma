@@ -148,6 +148,52 @@ model AppScoutProfile {
   updatedAt          DateTime  @updatedAt
 }
 
+// One row per full-site crawl run kicked off from the Crawler Agent tab.
+// Unlike AppScoutProfile (Coverage Index — page-limited, clustered into
+// workflows, overwritten on every re-scan), a CrawlSession is unbounded
+// (crawls every same-origin page it can reach, up to a hard safety cap —
+// see CRAWL_HARD_PAGE_CAP / CRAWL_HARD_DURATION_SEC in crawler.py) and is
+// KEPT as history — each run gets its own row plus its own CrawlPage rows,
+// so past crawls stay browsable instead of being overwritten by the next one.
+model CrawlSession {
+  id            String      @id @default(cuid())
+  appId         String
+  baseUrl       String
+  status        String      @default("running") // running | completed | failed | stopped
+  errorMessage  String?
+  pagesCrawled  Int         @default(0)
+  totalElements Int         @default(0)
+  authAttempted Boolean     @default(false)
+  authSucceeded Boolean     @default(false)
+  durationSec   Float?
+  createdAt     DateTime    @default(now())
+  finishedAt    DateTime?
+  pages         CrawlPage[]
+}
+
+// One row per page visited during a CrawlSession. `elements` is a JSON-encoded
+// array of every interactive element found on that page (tag, id, name,
+// className, role, label, selector, etc. — see crawler.py's
+// _extract_page_elements_detailed for the exact shape) and is intentionally
+// plain text (not further normalized into its own table) so it stays trivial
+// to hand-edit from the Crawler Agent UI and to export as one JSON blob.
+model CrawlPage {
+  id             String       @id @default(cuid())
+  sessionId      String
+  session        CrawlSession @relation(fields: [sessionId], references: [id])
+  url            String
+  title          String?
+  status         String       @default("ok") // ok | failed
+  errorMessage   String?
+  screenshotPath String?
+  elements       String       @default("[]")
+  elementCount   Int          @default(0)
+  crawledAt      DateTime     @default(now())
+  editedAt       DateTime?
+
+  @@index([sessionId])
+}
+
 model KnowledgeAsset {
   id        Int      @id @default(autoincrement())
   appId     String

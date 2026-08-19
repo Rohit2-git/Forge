@@ -45,6 +45,58 @@ export interface TestCase {
   createdAt: string;
 }
 
+// ── Crawler Agent ──────────────────────────────────────────────────────
+// One captured interactive element's full DOM detail — see
+// server/app/executors/crawler.py's _ELEMENT_EXTRACTION_JS for the exact
+// shape this mirrors.
+export interface CrawledElement {
+  tag: string;
+  id: string | null;
+  name: string | null;
+  className: string | null;
+  type: string | null;
+  role: string | null;
+  ariaLabel: string | null;
+  placeholder: string | null;
+  label: string;
+  href: string | null;
+  value: string | null;
+  dataTestId: string | null;
+  visible: boolean;
+  selector: string;
+  crawlId?: string;
+}
+
+export interface CrawlPage {
+  id: string;
+  sessionId: string;
+  url: string;
+  title: string | null;
+  status: 'ok' | 'failed';
+  errorMessage: string | null;
+  screenshotPath: string | null;
+  elementCount: number;
+  elements?: CrawledElement[]; // present only on the full (non-list) fetch
+  crawledAt: string;
+  editedAt: string | null;
+}
+
+export interface CrawlSession {
+  id: string;
+  appId: string;
+  baseUrl: string;
+  status: 'running' | 'completed' | 'failed' | 'stopped';
+  errorMessage: string | null;
+  pagesCrawled: number;
+  totalElements: number;
+  authAttempted: boolean;
+  authSucceeded: boolean;
+  durationSec: number | null;
+  createdAt: string;
+  finishedAt: string | null;
+  pages?: CrawlPage[];
+}
+
 export interface KnowledgeAsset {
   id: string;
   appId: string;

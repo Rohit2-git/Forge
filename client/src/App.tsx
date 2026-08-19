@@ -7,10 +7,8 @@ import { Dashboard } from './components/Dashboard';
 import { Repository } from './components/Repository';
 import { Generator } from './components/Generator';
 import { TestDataManager } from './components/TestDataManager';
+import { CrawlerAgent } from './components/CrawlerAgent';
 
-// Generation-focused build: only four sections — Overview, Test Cases,
-// AI Test Design, Test Data. Login is required (real accounts), but there
-// are no role tiers — every account has identical access.
 
 function App() {
   const [activeTab, setActiveTab] = useState<string>('dashboard');
@@ -51,6 +49,9 @@ function App() {
               </div>
               <div style={{ display: activeTab === 'test-data' ? 'block' : 'none' }}>
                 <TestDataManager />
+              </div>
+              <div style={{ display: activeTab === 'crawler' ? 'block' : 'none' }}>
+                <CrawlerAgent />
               </div>
             </main>
           </div>

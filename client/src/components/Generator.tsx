@@ -3,21 +3,21 @@ import { useApp } from '../context/AppContext';
 import {
   Ticket, ClipboardList, FileUp, Image, Sparkles, X,
   ChevronDown, ChevronRight, FileText, Trash2, Edit2, Terminal, CheckSquare, Square, Copy, Download, Activity, Cpu, Layers,
-  RefreshCw, Settings2, MousePointerClick, AlertTriangle
+  RefreshCw, Settings2, MousePointerClick, AlertTriangle, Radar
 } from 'lucide-react';
 import { apiService } from '../services/api';
 
-type GenerationMode = 'jira' | 'acceptance' | 'file' | 'wireframe';
+type GenerationMode = 'jira' | 'acceptance' | 'file' | 'wireframe' | 'crawler';
 
 // Category split — mirrors CATEGORY_CONFIG in server/app/services/llm_service.py.
 // Order here is display order (Functional first since it's the largest and the
 // signal everything else scales from), not generation order.
 const CATEGORY_META: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  functional:   { label: 'Functional',          color: '#0369a1', bg: 'rgba(56,189,248,0.12)', border: 'rgba(56,189,248,0.3)' },
-  smoke_e2e:    { label: 'Smoke / End-to-End',   color: '#047857', bg: 'rgba(74,222,128,0.14)', border: 'rgba(74,222,128,0.35)' },
-  regression:   { label: 'Regression',           color: '#7c3aed', bg: 'rgba(192,132,252,0.14)', border: 'rgba(192,132,252,0.3)' },
-  data_driven:  { label: 'Data Driven',          color: '#b45309', bg: 'rgba(251,191,36,0.14)', border: 'rgba(251,191,36,0.5)' },
-  ui:           { label: 'UI',                   color: '#be185d', bg: 'rgba(244,114,182,0.12)', border: 'rgba(244,114,182,0.3)' },
+  functional:   { label: 'Functional',          color: '#1D6FB8', bg: 'rgba(56,189,248,0.12)', border: 'rgba(56,189,248,0.3)' },
+  smoke_e2e:    { label: 'Smoke / End-to-End',   color: '#0F6B41', bg: 'rgba(74,222,128,0.14)', border: 'rgba(74,222,128,0.35)' },
+  regression:   { label: 'Regression',           color: '#6E4CC9', bg: 'rgba(192,132,252,0.14)', border: 'rgba(192,132,252,0.3)' },
+  data_driven:  { label: 'Data Driven',          color: '#8F5D08', bg: 'rgba(251,191,36,0.14)', border: 'rgba(251,191,36,0.5)' },
+  ui:           { label: 'UI',                   color: '#B23A6B', bg: 'rgba(244,114,182,0.12)', border: 'rgba(244,114,182,0.3)' },
 };
 const CATEGORY_ORDER = ['functional', 'smoke_e2e', 'regression', 'data_driven', 'ui'];
 
@@ -57,10 +57,10 @@ const CoverageIndexPanel: React.FC<{
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#101828', border: '1px solid rgba(148,163,184,0.18)', borderRadius: '10px', padding: '0.85rem 1rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F3F4F7', border: '1px solid rgba(148,163,184,0.18)', borderRadius: '10px', padding: '0.85rem 1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Settings2 size={14} style={{ color: '#818cf8' }} />
-          <span style={{ fontSize: '0.78rem', color: '#cbd5e1', fontWeight: 600 }}>Crawl page limit</span>
+          <Settings2 size={14} style={{ color: '#4C63D2' }} />
+          <span style={{ fontSize: '0.78rem', color: '#4B4E5A', fontWeight: 600 }}>Crawl page limit</span>
           <input
             type="number"
             min={1}
@@ -74,20 +74,20 @@ const CoverageIndexPanel: React.FC<{
           type="button"
           onClick={onRescan}
           disabled={loading}
-          style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(129,140,248,0.12)', border: '1px solid rgba(129,140,248,0.4)', color: '#a5b4fc', fontWeight: 700, fontSize: '0.78rem', borderRadius: '6px', padding: '0.4rem 0.75rem', cursor: loading ? 'default' : 'pointer', opacity: loading ? 0.6 : 1 }}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(129,140,248,0.12)', border: '1px solid rgba(129,140,248,0.4)', color: '#4C63D2', fontWeight: 700, fontSize: '0.78rem', borderRadius: '6px', padding: '0.4rem 0.75rem', cursor: loading ? 'default' : 'pointer', opacity: loading ? 0.6 : 1 }}
         >
           <RefreshCw size={13} className={loading ? 'spin' : ''} /> {loading ? 'Scanning…' : 'Re-scan Application'}
         </button>
       </div>
 
       {loading && !profile && (
-        <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.85rem' }}>
+        <div style={{ padding: '2rem', textAlign: 'center', color: '#6B7280', fontSize: '0.85rem' }}>
           Scouting the live application — crawling pages and classifying interactive elements…
         </div>
       )}
 
       {error && (
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', background: 'rgba(248,113,113,0.12)', border: '1px solid rgba(248,113,113,0.35)', color: '#fca5a5', padding: '0.85rem 1rem', borderRadius: '10px', fontSize: '0.8rem' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', background: 'rgba(248,113,113,0.12)', border: '1px solid rgba(248,113,113,0.35)', color: '#C7402B', padding: '0.85rem 1rem', borderRadius: '10px', fontSize: '0.8rem' }}>
           <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: '1px' }} />
           <span>{error}</span>
         </div>
@@ -100,7 +100,7 @@ const CoverageIndexPanel: React.FC<{
               display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 0.85rem', borderRadius: '8px', fontSize: '0.78rem',
               background: profile.authSucceeded ? 'rgba(74,222,128,0.12)' : 'rgba(251,191,36,0.12)',
               border: `1px solid ${profile.authSucceeded ? 'rgba(74,222,128,0.35)' : 'rgba(251,191,36,0.5)'}`,
-              color: profile.authSucceeded ? '#15803d' : '#92400e',
+              color: profile.authSucceeded ? '#157F52' : '#8F5D08',
             }}>
               {profile.authSucceeded
                 ? '✓ Detected a login wall and signed in with this app\'s Test Data before crawling — results reflect the authenticated app.'
@@ -109,49 +109,49 @@ const CoverageIndexPanel: React.FC<{
           )}
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
-            <div style={{ background: '#101828', border: '1px solid rgba(148,163,184,0.18)', borderRadius: '10px', padding: '1rem' }}>
-              <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Coverage Index</span>
-              <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#f1f5f9', marginTop: '2px' }}>{profile.coveragePercent}%</div>
-              <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '2px' }}>{profile.generatedTestCases} of ~{profile.estimatedTestCases} estimated workflows covered</div>
+            <div style={{ background: '#F3F4F7', border: '1px solid rgba(148,163,184,0.18)', borderRadius: '10px', padding: '1rem' }}>
+              <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Coverage Index</span>
+              <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#14151A', marginTop: '2px' }}>{profile.coveragePercent}%</div>
+              <div style={{ fontSize: '0.72rem', color: '#6B7280', marginTop: '2px' }}>{profile.generatedTestCases} of ~{profile.estimatedTestCases} estimated workflows covered</div>
             </div>
-            <div style={{ background: '#101828', border: '1px solid rgba(148,163,184,0.18)', borderRadius: '10px', padding: '1rem' }}>
-              <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pages Scanned</span>
-              <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#f1f5f9', marginTop: '2px' }}>{profile.pagesScanned}</div>
-              <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '2px' }}>{profile.totalElements} interactive elements found</div>
+            <div style={{ background: '#F3F4F7', border: '1px solid rgba(148,163,184,0.18)', borderRadius: '10px', padding: '1rem' }}>
+              <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pages Scanned</span>
+              <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#14151A', marginTop: '2px' }}>{profile.pagesScanned}</div>
+              <div style={{ fontSize: '0.72rem', color: '#6B7280', marginTop: '2px' }}>{profile.totalElements} interactive elements found</div>
             </div>
-            <div style={{ background: '#101828', border: '1px solid rgba(148,163,184,0.18)', borderRadius: '10px', padding: '1rem' }}>
-              <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Safe to Generate</span>
-              <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#f1f5f9', marginTop: '2px' }}>+{profile.safeToGenerateMore}</div>
-              <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '2px' }}>more before redundancy risk</div>
+            <div style={{ background: '#F3F4F7', border: '1px solid rgba(148,163,184,0.18)', borderRadius: '10px', padding: '1rem' }}>
+              <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Safe to Generate</span>
+              <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#14151A', marginTop: '2px' }}>+{profile.safeToGenerateMore}</div>
+              <div style={{ fontSize: '0.72rem', color: '#6B7280', marginTop: '2px' }}>more before redundancy risk</div>
             </div>
           </div>
 
-          <div style={{ background: '#101828', border: '1px solid rgba(148,163,184,0.18)', borderRadius: '10px', padding: '1rem' }}>
+          <div style={{ background: '#F3F4F7', border: '1px solid rgba(148,163,184,0.18)', borderRadius: '10px', padding: '1rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#94a3b8' }}>Generated vs. Estimated Workflows</span>
-              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#cbd5e1' }}>{profile.generatedTestCases} / {profile.estimatedTestCases}</span>
+              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#6B7280' }}>Generated vs. Estimated Workflows</span>
+              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#4B4E5A' }}>{profile.generatedTestCases} / {profile.estimatedTestCases}</span>
             </div>
             <div style={{ width: '100%', height: '10px', background: 'rgba(148,163,184,0.18)', borderRadius: '999px', overflow: 'hidden' }}>
-              <div style={{ width: `${Math.min(100, profile.coveragePercent)}%`, height: '100%', background: profile.coveragePercent >= 100 ? '#fbbf24' : '#818cf8', borderRadius: '999px', transition: 'width 0.3s ease' }} />
+              <div style={{ width: `${Math.min(100, profile.coveragePercent)}%`, height: '100%', background: profile.coveragePercent >= 100 ? '#B4790A' : '#4C63D2', borderRadius: '999px', transition: 'width 0.3s ease' }} />
             </div>
           </div>
 
-          <div style={{ background: '#101828', border: '1px solid rgba(148,163,184,0.18)', borderRadius: '10px', padding: '1rem' }}>
+          <div style={{ background: '#F3F4F7', border: '1px solid rgba(148,163,184,0.18)', borderRadius: '10px', padding: '1rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
-              <MousePointerClick size={14} style={{ color: '#818cf8' }} />
-              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Discovered Workflows ({profile.workflows.length})</span>
+              <MousePointerClick size={14} style={{ color: '#4C63D2' }} />
+              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Discovered Workflows ({profile.workflows.length})</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', maxHeight: '220px', overflowY: 'auto' }}>
               {profile.workflows.length === 0 && (
-                <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>No actionable workflows discovered — check the crawl page limit or the app URL.</span>
+                <span style={{ fontSize: '0.78rem', color: '#6B7280' }}>No actionable workflows discovered — check the crawl page limit or the app URL.</span>
               )}
               {profile.workflows.map((w: any, i: number) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0.6rem', background: '#141c30', border: '1px solid #1a2338', borderRadius: '6px' }}>
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0.6rem', background: '#FFFFFF', border: '1px solid #E7E9EE', borderRadius: '6px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#e2e8f0' }}>{intentLabels[w.intent] || w.intent}</span>
-                    <span style={{ fontSize: '0.68rem', color: '#94a3b8', fontFamily: 'monospace' }}>{w.routePattern} · {w.instanceCount} instance(s) clustered</span>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#14151A' }}>{intentLabels[w.intent] || w.intent}</span>
+                    <span style={{ fontSize: '0.68rem', color: '#6B7280', fontFamily: 'monospace' }}>{w.routePattern} · {w.instanceCount} instance(s) clustered</span>
                   </div>
-                  <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#a5b4fc', background: 'rgba(129,140,248,0.12)', padding: '2px 8px', borderRadius: '4px' }}>{w.variants} variant(s)</span>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#4C63D2', background: 'rgba(129,140,248,0.12)', padding: '2px 8px', borderRadius: '4px' }}>{w.variants} variant(s)</span>
                 </div>
               ))}
             </div>
@@ -190,6 +190,94 @@ export const Generator: React.FC = () => {
   const [dataSourceTemplates, setDataSourceTemplates] = useState<any[]>([]);
   const [dataSourceConditions, setDataSourceConditions] = useState<any[]>([]);
   const [dataSourceBatches, setDataSourceBatches] = useState<any[]>([]);
+
+  // Crawler Data mode — lets a completed Crawler Agent run (id/class/name/
+  // selector inventory + screenshots, see CrawlerAgent.tsx) stand in as the
+  // generation source instead of a Jira story or uploaded file. Selecting
+  // pages here builds a plain-text element inventory straight into
+  // `sourceInput`, so it flows through the exact same generateTestPack(...)
+  // call every other mode already uses — no backend changes needed.
+  const [crawlSession, setCrawlSession] = useState<any>(null);
+  const [crawlLoading, setCrawlLoading] = useState(false);
+  const [crawlError, setCrawlError] = useState<string | null>(null);
+  const [selectedCrawlPageIds, setSelectedCrawlPageIds] = useState<string[]>([]);
+
+  const formatCrawlPagesAsText = (pages: any[]): string => {
+    return pages.map((p: any) => {
+      const elLines = (p.elements || []).map((el: any) => {
+        const bits = [
+          el.tag,
+          el.id ? `id="${el.id}"` : null,
+          el.name ? `name="${el.name}"` : null,
+          el.className ? `class="${el.className}"` : null,
+          el.role ? `role="${el.role}"` : null,
+          el.type ? `type="${el.type}"` : null,
+          el.label ? `label="${el.label}"` : null,
+          el.dataTestId ? `data-testid="${el.dataTestId}"` : null,
+          el.href ? `href="${el.href}"` : null,
+          `selector="${el.selector}"`,
+        ].filter(Boolean).join(' ');
+        return `  - ${bits}`;
+      }).join('\n');
+      return `PAGE: ${p.title || 'Untitled'} (${p.url})\nElements:\n${elLines || '  (none captured)'}`;
+    }).join('\n\n');
+  };
+
+  // Load the latest crawl session for the active app whenever Crawler Data
+  // mode is selected.
+  useEffect(() => {
+    if (mode !== 'crawler' || !activeAppId) return;
+    (async () => {
+      setCrawlLoading(true);
+      setCrawlError(null);
+      try {
+        const list = await apiService.listCrawlSessions(activeAppId);
+        if (!list || list.length === 0) {
+          setCrawlSession(null);
+          setSelectedCrawlPageIds([]);
+          return;
+        }
+        const latest = list[0];
+        const full = await apiService.getCrawlSession(activeAppId, latest.id);
+        setCrawlSession(full);
+        const okPageIds = (full.pages || []).filter((p: any) => p.status === 'ok').map((p: any) => p.id);
+        setSelectedCrawlPageIds(okPageIds);
+      } catch (err: any) {
+        setCrawlError(err.message || 'Failed to load crawl data.');
+      } finally {
+        setCrawlLoading(false);
+      }
+    })();
+  }, [mode, activeAppId]);
+
+  // Whenever the page selection changes, fetch full element detail for the
+  // selected pages (the session/list endpoints intentionally return "light"
+  // pages without element JSON to keep the gallery fast — see
+  // _serialize_page_light in crawler.py) and rebuild sourceInput from them.
+  useEffect(() => {
+    if (mode !== 'crawler' || !crawlSession || !activeAppId) return;
+    if (selectedCrawlPageIds.length === 0) {
+      setSourceInput('');
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const fullPages = await Promise.all(
+          selectedCrawlPageIds.map((id) => apiService.getCrawlPage(activeAppId, id))
+        );
+        if (!cancelled) setSourceInput(formatCrawlPagesAsText(fullPages));
+      } catch (err: any) {
+        if (!cancelled) setCrawlError(err.message || 'Failed to load selected pages\' elements.');
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCrawlPageIds, crawlSession, mode, activeAppId]);
+
+  const toggleCrawlPage = (pageId: string) => {
+    setSelectedCrawlPageIds(prev => prev.includes(pageId) ? prev.filter(id => id !== pageId) : [...prev, pageId]);
+  };
 
   // Persist form state to AppContext whenever key fields change
   useEffect(() => {
@@ -260,17 +348,10 @@ export const Generator: React.FC = () => {
   const [activeExportDropdownId, setActiveExportDropdownId] = useState<string | null>(null);
 
   const [selectedCardIds, setSelectedCardIds] = useState<string[]>([]);
-  // Which "<batchId>:<category>" sub-groups are collapsed within an expanded
-  // batch. A group is expanded by default (absent from this set) the first
-  // time it's rendered — this only tracks explicit user collapses.
-  const [collapsedCategoryGroups, setCollapsedCategoryGroups] = useState<Set<string>>(new Set());
-  const toggleCategoryGroup = (key: string) => {
-    setCollapsedCategoryGroups(prev => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key); else next.add(key);
-      return next;
-    });
-  };
+  // Which category tab is active per batch — "all" (default) or a
+  // CATEGORY_ORDER key. Drives both the horizontal tab bar and which
+  // section(s) of a batch's test cases are rendered below it.
+  const [activeCategoryTab, setActiveCategoryTab] = useState<Record<string, string>>({});
   const [editingCardId, setEditingCardId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
 
@@ -283,7 +364,8 @@ export const Generator: React.FC = () => {
     jira: { placeholder: "Paste Jira Story Link or Ticket Body descriptions here... (Compulsory if no files attached)", accept: "" },
     acceptance: { placeholder: "Enter explicit acceptance criteria rules here... (Compulsory if no files attached)", accept: "" },
     file: { placeholder: "Optional guidelines for this User Story file...", accept: ".pdf,.txt,.docx,.md" },
-    wireframe: { placeholder: "Optional click logic for this Wireframe capture...", accept: ".png,.jpg,.jpeg,.webp" }
+    wireframe: { placeholder: "Optional click logic for this Wireframe capture...", accept: ".png,.jpg,.jpeg,.webp" },
+    crawler: { placeholder: "Select crawled pages on the right — their captured elements populate this box automatically. Edit freely before generating.", accept: "" }
   };
 
   const isFormValid = useMemo(() => {
@@ -786,11 +868,11 @@ export const Generator: React.FC = () => {
   };
 
   return (
-    <div className="generator-view" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '1200px', margin: '0 auto', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div className="generator-view" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '1200px', margin: '0 auto', fontFamily: 'var(--font-sans)' }}>
       <div className="view-header" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
         <div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#f1f5f9', letterSpacing: '-0.02em' }}>AI Test Design Studio</h1>
-          <p style={{ color: '#94a3b8', marginTop: '0.25rem', fontSize: '0.95rem' }}>Generate scalable test packs from requirements while grounding outputs on specific application operational context parameters.</p>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#14151A', letterSpacing: '-0.02em' }}>AI Test Design Studio</h1>
+          <p style={{ color: '#6B7280', marginTop: '0.25rem', fontSize: '0.95rem' }}>Generate scalable test packs from requirements while grounding outputs on specific application operational context parameters.</p>
         </div>
         <button
           type="button"
@@ -799,7 +881,7 @@ export const Generator: React.FC = () => {
           title={!activeAppId ? 'Select an application first' : 'View Coverage Index for this application'}
           style={{
             display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0, marginTop: '0.2rem',
-            background: 'rgba(129,140,248,0.12)', border: '1px solid rgba(129,140,248,0.4)', color: '#a5b4fc', fontWeight: 700, fontSize: '0.85rem',
+            background: 'rgba(129,140,248,0.12)', border: '1px solid rgba(129,140,248,0.4)', color: '#4C63D2', fontWeight: 700, fontSize: '0.85rem',
             borderRadius: '8px', padding: '0.55rem 0.9rem', cursor: activeAppId ? 'pointer' : 'not-allowed',
             opacity: activeAppId ? 1 : 0.5
           }}
@@ -808,12 +890,13 @@ export const Generator: React.FC = () => {
         </button>
       </div>
 
-      <div className="glass-card" style={{ background: '#141c30', border: '1px solid rgba(148,163,184,0.16)', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+      <div className="glass-card" style={{ background: '#FFFFFF', border: '1px solid rgba(148,163,184,0.16)', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
           <button type="button" className={`btn btn-secondary btn-small ${mode === 'jira' ? 'active-app-border' : ''}`} onClick={() => handleModeChange('jira')} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.85rem', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600 }}><Ticket size={14}/> Jira Story</button>
           <button type="button" className={`btn btn-secondary btn-small ${mode === 'acceptance' ? 'active-app-border' : ''}`} onClick={() => handleModeChange('acceptance')} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.85rem', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600 }}><ClipboardList size={14}/> Acceptance Criteria</button>
           <button type="button" className={`btn btn-secondary btn-small ${mode === 'file' ? 'active-app-border' : ''}`} onClick={() => handleModeChange('file')} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.85rem', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600 }}><FileUp size={14}/> User Story File *</button>
           <button type="button" className={`btn btn-secondary btn-small ${mode === 'wireframe' ? 'active-app-border' : ''}`} onClick={() => handleModeChange('wireframe')} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.85rem', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600 }}><Image size={14}/> Wireframe Capture *</button>
+          <button type="button" className={`btn btn-secondary btn-small ${mode === 'crawler' ? 'active-app-border' : ''}`} onClick={() => handleModeChange('crawler')} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.85rem', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600 }}><Radar size={14}/> Crawler Data</button>
           <input type="file" multiple ref={fileInputRef} style={{ display: 'none' }} accept={modeConfig[mode].accept} onChange={handleFileChange} />
         </div>
 
@@ -822,11 +905,11 @@ export const Generator: React.FC = () => {
             <textarea className="textarea-field" placeholder={modeConfig[mode].placeholder} value={sourceInput} onChange={(e) => setSourceInput(e.target.value)} style={{ minHeight: '130px', width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(148,163,184,0.22)', fontSize: '0.9rem', outline: 'none' }} />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.02em' }}>Batch Name</span>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#6B7280', letterSpacing: '0.02em' }}>Batch Name</span>
                 <input className="input-field" style={{ height: '42px', padding: '0 0.75rem', borderRadius: '8px', border: '1px solid rgba(148,163,184,0.22)' }} value={batchName} onChange={(e) => setBatchName(e.target.value)} placeholder="Optional — e.g. Checkout Flow (defaults to file name)" />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.02em' }}>Context / Test Data</span>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#6B7280', letterSpacing: '0.02em' }}>Context / Test Data</span>
                 <input className="input-field" style={{ height: '42px', padding: '0 0.75rem', borderRadius: '8px', border: '1px solid rgba(148,163,184,0.22)' }} value={appContextInput} onChange={(e) => setAppContextInput(e.target.value)} placeholder="e.g. url, parameters, rules..." />
               </div>
             </div>
@@ -838,7 +921,7 @@ export const Generator: React.FC = () => {
                 templates. Batches assign one distinct record per test case,
                 round-robin, so the run still gets data variety. */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.02em' }}>Data Source</span>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#6B7280', letterSpacing: '0.02em' }}>Data Source</span>
               <select
                 className="input-field"
                 value={dataSourceSelection}
@@ -869,25 +952,60 @@ export const Generator: React.FC = () => {
                 )}
               </select>
               {dataSourceSelection.startsWith('batch:') && (
-                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                <span style={{ fontSize: '0.75rem', color: '#6B7280' }}>
                   Records are assigned one per test case, round-robin, so this run's test cases won't all share the same data.
                 </span>
               )}
             </div>
           </div>
-          <div style={{ background: '#101828', padding: '1.25rem', borderRadius: '10px', border: '1px solid rgba(148,163,184,0.16)', display: 'flex', flexDirection: 'column' }}>
-            <h4 style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.8rem', letterSpacing: '0.02em' }}>Staged Files Queue</h4>
-            {stagedFiles.length === 0 ? (
-              <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: 'auto', textAlign: 'center', lineHeight: '1.4' }}>No source files attached.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', overflowY: 'auto', maxHeight: '160px' }}>
-                {stagedFiles.map((f) => (
-                  <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#141c30', padding: '8px 12px', borderRadius: '6px', fontSize: '0.8rem', border: '1px solid rgba(148,163,184,0.16)' }}>
-                    <span className="environment-url" style={{ color: '#cbd5e1', fontWeight: 500 }} title={f.file.name}>{f.file.name}</span>
-                    <X size={14} style={{ cursor: 'pointer', color: '#f87171' }} onClick={() => setStagedFiles(prev => prev.filter(file => file.id !== f.id))} />
+          <div style={{ background: '#F3F4F7', padding: '1.25rem', borderRadius: '10px', border: '1px solid rgba(148,163,184,0.16)', display: 'flex', flexDirection: 'column' }}>
+            {mode === 'crawler' ? (
+              <>
+                <h4 style={{ fontSize: '0.75rem', color: '#6B7280', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.8rem', letterSpacing: '0.02em', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <Radar size={13} /> Crawled Pages
+                </h4>
+                {crawlLoading && <p style={{ fontSize: '0.8rem', color: '#6B7280', margin: 'auto', textAlign: 'center' }}>Loading crawl data…</p>}
+                {crawlError && <p style={{ fontSize: '0.78rem', color: '#C7402B' }}>{crawlError}</p>}
+                {!crawlLoading && !crawlError && !crawlSession && (
+                  <p style={{ fontSize: '0.85rem', color: '#6B7280', margin: 'auto', textAlign: 'center', lineHeight: '1.4' }}>
+                    No crawl found for this app yet. Run one from the Crawler tab first.
+                  </p>
+                )}
+                {!crawlLoading && crawlSession && (crawlSession.pages || []).length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', overflowY: 'auto', maxHeight: '220px' }}>
+                    {crawlSession.pages.filter((p: any) => p.status === 'ok').map((p: any) => (
+                      <label key={p.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', background: '#FFFFFF', padding: '8px 10px', borderRadius: '6px', fontSize: '0.78rem', border: '1px solid rgba(148,163,184,0.16)', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={selectedCrawlPageIds.includes(p.id)}
+                          onChange={() => toggleCrawlPage(p.id)}
+                          style={{ marginTop: '2px', flexShrink: 0 }}
+                        />
+                        <span style={{ minWidth: 0 }}>
+                          <span style={{ display: 'block', color: '#14151A', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title || 'Untitled'}</span>
+                          <span style={{ display: 'block', color: '#6B7280', fontFamily: 'monospace', fontSize: '0.68rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.url} · {p.elementCount} elements</span>
+                        </span>
+                      </label>
+                    ))}
                   </div>
-                ))}
-              </div>
+                )}
+              </>
+            ) : (
+              <>
+                <h4 style={{ fontSize: '0.75rem', color: '#6B7280', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.8rem', letterSpacing: '0.02em' }}>Staged Files Queue</h4>
+                {stagedFiles.length === 0 ? (
+                  <p style={{ fontSize: '0.85rem', color: '#6B7280', margin: 'auto', textAlign: 'center', lineHeight: '1.4' }}>No source files attached.</p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', overflowY: 'auto', maxHeight: '160px' }}>
+                    {stagedFiles.map((f) => (
+                      <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FFFFFF', padding: '8px 12px', borderRadius: '6px', fontSize: '0.8rem', border: '1px solid rgba(148,163,184,0.16)' }}>
+                        <span className="environment-url" style={{ color: '#4B4E5A', fontWeight: 500 }} title={f.file.name}>{f.file.name}</span>
+                        <X size={14} style={{ cursor: 'pointer', color: '#C7402B' }} onClick={() => setStagedFiles(prev => prev.filter(file => file.id !== f.id))} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -917,7 +1035,7 @@ export const Generator: React.FC = () => {
               gap: '0.6rem',
               background: 'rgba(248,113,113,0.12)',
               border: '1px solid rgba(248,113,113,0.35)',
-              color: '#fca5a5',
+              color: '#C7402B',
               cursor: 'pointer',
               fontSize: '0.85rem',
               animation: 'otai-pulse-border 1.6s ease-in-out infinite'
@@ -930,7 +1048,7 @@ export const Generator: React.FC = () => {
         <style>{`
           @keyframes otai-pulse-border {
             0%, 100% { border-color: rgba(248,113,113,0.35); }
-            50% { border-color: #f87171; }
+            50% { border-color: #C7402B; }
           }
         `}</style>
       </div>
@@ -945,122 +1063,182 @@ export const Generator: React.FC = () => {
           const isDropdownOpen = activeExportDropdownId === batch.id;
 
           return (
-            <div key={batch.id} className="glass-card" style={{ padding: 0, overflow: 'visible', background: '#141c30', border: '1px solid rgba(148,163,184,0.16)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.01)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.25rem', background: '#101828', borderBottom: '1px solid rgba(148,163,184,0.16)', borderTopLeftRadius: '12px', borderTopRightRadius: '12px' }}>
+            <div key={batch.id} className="glass-card" style={{ padding: 0, overflow: 'visible', background: '#FFFFFF', border: '1px solid rgba(148,163,184,0.16)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.01)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.25rem', background: '#F3F4F7', borderBottom: '1px solid rgba(148,163,184,0.16)', borderTopLeftRadius: '12px', borderTopRightRadius: '12px' }}>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', color: isAllBatchChecked ? '#2dd4bf' : 'rgba(148,163,184,0.22)' }} onClick={() => handleToggleSelectAllBatch(batch.testCases)}>
+                  <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', color: isAllBatchChecked ? '#0E8F82' : 'rgba(148,163,184,0.22)' }} onClick={() => handleToggleSelectAllBatch(batch.testCases)}>
                     {isAllBatchChecked ? <CheckSquare size={19} /> : <Square size={19} />}
                   </div>
 
                   <div onClick={() => setGenerationBatches(generationBatches.map(b => b.id === batch.id ? {...b, isCollapsed: !b.isCollapsed} : b))} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                    {batch.isCollapsed ? <ChevronRight size={16} style={{ color: '#94a3b8' }} /> : <ChevronDown size={16} style={{ color: '#94a3b8' }} />}
-                    <FileText size={16} style={{ color: '#22d3ee' }} />
-                    <strong style={{ fontSize: '0.95rem', color: '#f1f5f9' }}>{batch.batchName || batch.sourceLabel}</strong>
-                    <span style={{ fontSize: '0.75rem', background: 'rgba(56,189,248,0.12)', color: '#0369a1', padding: '2px 8px', borderRadius: '12px', fontWeight: 700, marginLeft: '0.25rem' }}>{batch.testCases.length} Tests</span>
+                    {batch.isCollapsed ? <ChevronRight size={16} style={{ color: '#6B7280' }} /> : <ChevronDown size={16} style={{ color: '#6B7280' }} />}
+                    <FileText size={16} style={{ color: '#2A4CE0' }} />
+                    <strong style={{ fontSize: '0.95rem', color: '#14151A' }}>{batch.batchName || batch.sourceLabel}</strong>
+                    <span style={{ fontSize: '0.75rem', background: 'rgba(56,189,248,0.12)', color: '#1D6FB8', padding: '2px 8px', borderRadius: '12px', fontWeight: 700, marginLeft: '0.25rem' }}>{batch.testCases.length} Tests</span>
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', position: 'relative' }} ref={isDropdownOpen ? dropdownRef : null}>
                   {selectedInBatchCount > 0 ? (
                     <div style={{ display: 'flex', gap: '0.4rem' }}>
-                      <button type="button" className="btn btn-secondary btn-small" style={{ borderColor: '#f87171', color: '#f87171', fontWeight: 600, height: '32px', borderRadius: '6px', padding: '0 0.75rem', background: 'rgba(248,113,113,0.10)' }} onClick={() => handleBulkDeleteFromBatch(batch.id, batch.testCases)}>
+                      <button type="button" className="btn btn-secondary btn-small" style={{ borderColor: '#C7402B', color: '#C7402B', fontWeight: 600, height: '32px', borderRadius: '6px', padding: '0 0.75rem', background: 'rgba(248,113,113,0.10)' }} onClick={() => handleBulkDeleteFromBatch(batch.id, batch.testCases)}>
                         Delete Selected ({selectedInBatchCount})
                       </button>
-                      <button type="button" className="btn btn-secondary btn-small" disabled={savingBatchId === batch.id} style={{ borderColor: savingBatchId === batch.id ? '#94a3b8' : '#22d3ee', background: savingBatchId === batch.id ? '#1a2338' : 'rgba(34,211,238,0.12)', color: savingBatchId === batch.id ? '#94a3b8' : '#0891b2', fontWeight: 700, height: '32px', borderRadius: '6px', padding: '0 0.75rem', cursor: savingBatchId === batch.id ? 'not-allowed' : 'pointer' }} onClick={() => handleSaveSelectedToRepo(batch.id, batch.testCases)}>
+                      <button type="button" className="btn btn-secondary btn-small" disabled={savingBatchId === batch.id} style={{ borderColor: savingBatchId === batch.id ? '#6B7280' : '#2A4CE0', background: savingBatchId === batch.id ? '#E7E9EE' : 'rgba(34,211,238,0.12)', color: savingBatchId === batch.id ? '#6B7280' : '#2A4CE0', fontWeight: 700, height: '32px', borderRadius: '6px', padding: '0 0.75rem', cursor: savingBatchId === batch.id ? 'not-allowed' : 'pointer' }} onClick={() => handleSaveSelectedToRepo(batch.id, batch.testCases)}>
                         {savingBatchId === batch.id ? 'Saving...' : `Save Selected (${selectedInBatchCount})`}
                       </button>
                     </div>
                   ) : (
                     <div style={{ display: 'flex', gap: '0.4rem' }}>
-                      <button type="button" className="btn btn-secondary btn-small" onClick={() => { setActiveExportDropdownId(isDropdownOpen ? null : batch.id); }} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', height: '32px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, border: '1px solid rgba(148,163,184,0.16)', background: '#141c30' }}>
+                      <button type="button" className="btn btn-secondary btn-small" onClick={() => { setActiveExportDropdownId(isDropdownOpen ? null : batch.id); }} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', height: '32px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, border: '1px solid rgba(148,163,184,0.16)', background: '#FFFFFF' }}>
                         <Download size={13} /> Export Menu <ChevronDown size={11} />
                       </button>
 
                       {isDropdownOpen && (
-                        <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: '0', background: '#141c30', border: '1px solid rgba(148,163,184,0.16)', borderRadius: '8px', padding: '4px', zIndex: 100, minWidth: '140px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)' }}>
-                          <button type="button" onClick={() => executeDirectExport(batch.testCases, 'json')} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '8px 12px', fontSize: '0.8rem', fontWeight: 600, color: '#cbd5e1', cursor: 'pointer', borderRadius: '6px' }} onMouseEnter={(e) => e.currentTarget.style.background = '#1a2338'} onMouseLeave={(e) => e.currentTarget.style.background = 'none'}>Download JSON</button>
-                          <button type="button" onClick={() => executeDirectExport(batch.testCases, 'csv')} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '8px 12px', fontSize: '0.8rem', fontWeight: 600, color: '#cbd5e1', cursor: 'pointer', borderRadius: '6px' }} onMouseEnter={(e) => e.currentTarget.style.background = '#1a2338'} onMouseLeave={(e) => e.currentTarget.style.background = 'none'}>Download CSV</button>
-                          <button type="button" onClick={() => executeDirectExport(batch.testCases, 'txt')} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '8px 12px', fontSize: '0.8rem', fontWeight: 600, color: '#cbd5e1', cursor: 'pointer', borderRadius: '6px' }} onMouseEnter={(e) => e.currentTarget.style.background = '#1a2338'} onMouseLeave={(e) => e.currentTarget.style.background = 'none'}>Download Text</button>
+                        <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: '0', background: '#FFFFFF', border: '1px solid rgba(148,163,184,0.16)', borderRadius: '8px', padding: '4px', zIndex: 100, minWidth: '140px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)' }}>
+                          <button type="button" onClick={() => executeDirectExport(batch.testCases, 'json')} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '8px 12px', fontSize: '0.8rem', fontWeight: 600, color: '#4B4E5A', cursor: 'pointer', borderRadius: '6px' }} onMouseEnter={(e) => e.currentTarget.style.background = '#E7E9EE'} onMouseLeave={(e) => e.currentTarget.style.background = 'none'}>Download JSON</button>
+                          <button type="button" onClick={() => executeDirectExport(batch.testCases, 'csv')} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '8px 12px', fontSize: '0.8rem', fontWeight: 600, color: '#4B4E5A', cursor: 'pointer', borderRadius: '6px' }} onMouseEnter={(e) => e.currentTarget.style.background = '#E7E9EE'} onMouseLeave={(e) => e.currentTarget.style.background = 'none'}>Download CSV</button>
+                          <button type="button" onClick={() => executeDirectExport(batch.testCases, 'txt')} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '8px 12px', fontSize: '0.8rem', fontWeight: 600, color: '#4B4E5A', cursor: 'pointer', borderRadius: '6px' }} onMouseEnter={(e) => e.currentTarget.style.background = '#E7E9EE'} onMouseLeave={(e) => e.currentTarget.style.background = 'none'}>Download Text</button>
                         </div>
                       )}
 
-                      <button type="button" className="btn btn-secondary btn-small" onClick={() => executeDirectCopy(batch.testCases)} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', height: '32px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, border: '1px solid rgba(148,163,184,0.16)', background: '#141c30' }}><Copy size={13} /> Copy Suite</button>
-                      <button type="button" className="btn btn-accent btn-small" disabled={savingBatchId === batch.id} style={{ height: '32px', borderRadius: '6px', fontSize: '0.8rem', padding: '0 0.85rem', background: savingBatchId === batch.id ? '#94a3b8' : undefined, cursor: savingBatchId === batch.id ? 'not-allowed' : 'pointer' }} onClick={() => handleSaveSelectedToRepo(batch.id, batch.testCases, batch.testCases.map((t: any) => t.id))}>{savingBatchId === batch.id ? 'Saving...' : 'Save All to Repo'}</button>
+                      <button type="button" className="btn btn-secondary btn-small" onClick={() => executeDirectCopy(batch.testCases)} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', height: '32px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, border: '1px solid rgba(148,163,184,0.16)', background: '#FFFFFF' }}><Copy size={13} /> Copy Suite</button>
+                      <button type="button" className="btn btn-accent btn-small" disabled={savingBatchId === batch.id} style={{ height: '32px', borderRadius: '6px', fontSize: '0.8rem', padding: '0 0.85rem', background: savingBatchId === batch.id ? '#6B7280' : undefined, cursor: savingBatchId === batch.id ? 'not-allowed' : 'pointer' }} onClick={() => handleSaveSelectedToRepo(batch.id, batch.testCases, batch.testCases.map((t: any) => t.id))}>{savingBatchId === batch.id ? 'Saving...' : 'Save All to Repo'}</button>
                     </div>
                   )}
 
-                  <button type="button" className="btn btn-secondary btn-small" onClick={() => handleReopenModalForBatch(batch)} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', height: '32px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, border: '1px solid rgba(148,163,184,0.16)', background: '#141c30' }}><Terminal size={13} /> Tech Logs</button>
+                  <button type="button" className="btn btn-secondary btn-small" onClick={() => handleReopenModalForBatch(batch)} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', height: '32px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, border: '1px solid rgba(148,163,184,0.16)', background: '#FFFFFF' }}><Terminal size={13} /> Tech Logs</button>
                 </div>
               </div>
 
               {!batch.isCollapsed && (
-                <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', background: '#141c30' }}>
-                  {CATEGORY_ORDER.map((catKey) => {
-                    const groupTests = batch.testCases.filter((t: any) => (t.category || 'functional') === catKey);
-                    if (!groupTests.length) return null;
-                    const meta = CATEGORY_META[catKey];
-                    const groupKey = `${batch.id}:${catKey}`;
-                    const isGroupCollapsed = collapsedCategoryGroups.has(groupKey);
-                    return (
-                      <div key={catKey} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                        <button
-                          type="button"
-                          onClick={() => toggleCategoryGroup(groupKey)}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: '0.5rem',
-                            background: meta.bg, border: `1px solid ${meta.border}`, borderRadius: '6px',
-                            padding: '0.45rem 0.75rem', cursor: 'pointer', width: 'fit-content'
-                          }}
-                        >
-                          {isGroupCollapsed ? <ChevronRight size={14} style={{ color: meta.color }} /> : <ChevronDown size={14} style={{ color: meta.color }} />}
-                          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: meta.color }}>{meta.label}</span>
-                          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: meta.color, opacity: 0.75 }}>({groupTests.length})</span>
-                        </button>
+                <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', background: '#FFFFFF' }}>
+                  {(() => {
+                    const activeTab = activeCategoryTab[batch.id] || 'all';
+                    const allCount = batch.testCases.length;
+                    const visibleCategories = activeTab === 'all' ? CATEGORY_ORDER : [activeTab];
 
-                        {!isGroupCollapsed && (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                            {groupTests.map((test: any) => {
-                              const isChecked = selectedCardIds.includes(test.id);
-                              const isCurrentlyEditing = editingCardId === test.id;
-                              return (
-                                <div key={test.id} className="generated-test-card" style={{ padding: '1.25rem', background: '#141c30', border: '1px solid rgba(148,163,184,0.16)', borderRadius: '8px', display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-                                  <div style={{ marginTop: '0.2rem', cursor: 'pointer', color: isChecked ? '#22d3ee' : 'rgba(148,163,184,0.22)' }} onClick={() => handleCardSelectionToggle(test.id)}>
-                                    {isChecked ? <CheckSquare size={18} /> : <Square size={18} />}
-                                  </div>
-                                  <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', borderBottom: '1px solid #1a2338', paddingBottom: '0.5rem' }}>
-                                      {isCurrentlyEditing ? (
-                                        <div style={{ display: 'flex', gap: '0.5rem', flex: 1 }}>
-                                          <input type="text" className="input-field" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} style={{ height: '32px', width: '100%', borderRadius: '6px', border: '1px solid rgba(148,163,184,0.22)', padding: '0 0.5rem', fontSize: '0.9rem' }} />
-                                          <button type="button" className="btn btn-accent btn-small" style={{ height: '32px', borderRadius: '6px', padding: '0 0.75rem' }} onClick={() => saveInlineEdit(batch.id)}>Save</button>
-                                        </div>
-                                      ) : (
-                                        <>
-                                          <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#f1f5f9', margin: 0 }}>{test.title}</h3>
-                                          <div style={{ display: 'flex', gap: '0.35rem' }}>
-                                            <button type="button" className="btn btn-secondary btn-small" style={{ padding: '4px', border: '1px solid rgba(148,163,184,0.16)', background: '#141c30', borderRadius: '4px' }} onClick={() => openInlineEdit(test.id, test.title)}><Edit2 size={12} style={{ color: '#94a3b8' }} /></button>
-                                            <button type="button" className="btn btn-secondary btn-small" style={{ padding: '4px', border: '1px solid rgba(248,113,113,0.14)', background: 'rgba(248,113,113,0.10)', borderRadius: '4px' }} onClick={() => setGenerationBatches(prev => prev.map(b => b.id === batch.id ? { ...b, testCases: b.testCases.filter((t: any) => t.id !== test.id) } : b).filter(b => b.testCases.length > 0))}><Trash2 size={12} style={{ color: '#f87171' }} /></button>
-                                          </div>
-                                        </>
-                                      )}
-                                    </div>
-                                    <ol style={{ paddingLeft: '1.25rem', fontSize: '0.85rem', color: '#94a3b8', display: 'flex', flexDirection: 'column', gap: '0.4rem', margin: 0 }}>
-                                      {test.steps.map((s: any, sIdx: number) => (
-                                        <li key={sIdx} style={{ lineHeight: '1.5' }}>
-                                          {s.instruction} <span style={{ color: '#0891b2', fontWeight: 600 }}>{'→'} {s.expected}</span>
-                                        </li>
-                                      ))}
-                                    </ol>
-                                  </div>
+                    return (
+                      <>
+                        {/* Horizontal category tab bar — replaces the old stacked,
+                            individually-collapsible category list. "All" is the
+                            default view; picking a category filters the list
+                            below to just that section. */}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', paddingBottom: '1.1rem', borderBottom: '1px solid #E7E9EE' }}>
+                          <button
+                            type="button"
+                            onClick={() => setActiveCategoryTab(prev => ({ ...prev, [batch.id]: 'all' }))}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: '0.4rem',
+                              background: activeTab === 'all' ? '#14151A' : '#F3F4F7',
+                              color: activeTab === 'all' ? '#fff' : '#4B4E5A',
+                              border: `1px solid ${activeTab === 'all' ? '#14151A' : 'rgba(148,163,184,0.22)'}`,
+                              borderRadius: '20px', padding: '0.42rem 0.95rem', fontSize: '0.8rem', fontWeight: 700,
+                              cursor: 'pointer', transition: 'all 0.15s ease',
+                            }}
+                          >
+                            All <span style={{ opacity: 0.7 }}>({allCount})</span>
+                          </button>
+                          {CATEGORY_ORDER.map((catKey) => {
+                            const groupTests = batch.testCases.filter((t: any) => (t.category || 'functional') === catKey);
+                            if (!groupTests.length) return null;
+                            const meta = CATEGORY_META[catKey];
+                            const isActive = activeTab === catKey;
+                            return (
+                              <button
+                                key={catKey}
+                                type="button"
+                                onClick={() => setActiveCategoryTab(prev => ({ ...prev, [batch.id]: catKey }))}
+                                style={{
+                                  display: 'flex', alignItems: 'center', gap: '0.4rem',
+                                  background: isActive ? meta.color : meta.bg,
+                                  color: isActive ? '#fff' : meta.color,
+                                  border: `1px solid ${isActive ? meta.color : meta.border}`,
+                                  borderRadius: '20px', padding: '0.42rem 0.95rem', fontSize: '0.8rem', fontWeight: 700,
+                                  cursor: 'pointer', transition: 'all 0.15s ease',
+                                }}
+                              >
+                                {meta.label} <span style={{ opacity: 0.8 }}>({groupTests.length})</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {visibleCategories.map((catKey) => {
+                          const groupTests = batch.testCases.filter((t: any) => (t.category || 'functional') === catKey);
+                          if (!groupTests.length) return null;
+                          const meta = CATEGORY_META[catKey];
+                          return (
+                            <div key={catKey} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                  <span style={{ width: '8px', height: '8px', borderRadius: '2px', background: meta.color, display: 'inline-block' }} />
+                                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: meta.color }}>{meta.label}</span>
+                                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: meta.color, opacity: 0.7 }}>({groupTests.length})</span>
                                 </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
+                                {/* Save just this section — independent of "Save All to
+                                    Repo" above, which still saves the whole batch. */}
+                                <button
+                                  type="button"
+                                  disabled={savingBatchId === batch.id}
+                                  onClick={() => handleSaveSelectedToRepo(batch.id, batch.testCases, groupTests.map((t: any) => t.id))}
+                                  style={{
+                                    display: 'flex', alignItems: 'center', gap: '0.35rem', background: 'transparent',
+                                    border: `1px solid ${meta.border}`, color: meta.color, borderRadius: '6px',
+                                    padding: '0.3rem 0.7rem', fontSize: '0.75rem', fontWeight: 700,
+                                    cursor: savingBatchId === batch.id ? 'not-allowed' : 'pointer',
+                                    opacity: savingBatchId === batch.id ? 0.55 : 1,
+                                  }}
+                                >
+                                  <Download size={11} /> Save {meta.label} to Repo
+                                </button>
+                              </div>
+
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                {groupTests.map((test: any) => {
+                                  const isChecked = selectedCardIds.includes(test.id);
+                                  const isCurrentlyEditing = editingCardId === test.id;
+                                  return (
+                                    <div key={test.id} className="generated-test-card" style={{ padding: '1.25rem', background: '#FFFFFF', border: '1px solid rgba(148,163,184,0.16)', borderRadius: '8px', display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                                      <div style={{ marginTop: '0.2rem', cursor: 'pointer', color: isChecked ? '#2A4CE0' : 'rgba(148,163,184,0.22)' }} onClick={() => handleCardSelectionToggle(test.id)}>
+                                        {isChecked ? <CheckSquare size={18} /> : <Square size={18} />}
+                                      </div>
+                                      <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', borderBottom: '1px solid #E7E9EE', paddingBottom: '0.5rem' }}>
+                                          {isCurrentlyEditing ? (
+                                            <div style={{ display: 'flex', gap: '0.5rem', flex: 1 }}>
+                                              <input type="text" className="input-field" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} style={{ height: '32px', width: '100%', borderRadius: '6px', border: '1px solid rgba(148,163,184,0.22)', padding: '0 0.5rem', fontSize: '0.9rem' }} />
+                                              <button type="button" className="btn btn-accent btn-small" style={{ height: '32px', borderRadius: '6px', padding: '0 0.75rem' }} onClick={() => saveInlineEdit(batch.id)}>Save</button>
+                                            </div>
+                                          ) : (
+                                            <>
+                                              <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#14151A', margin: 0 }}>{test.title}</h3>
+                                              <div style={{ display: 'flex', gap: '0.35rem' }}>
+                                                <button type="button" className="btn btn-secondary btn-small" style={{ padding: '4px', border: '1px solid rgba(148,163,184,0.16)', background: '#FFFFFF', borderRadius: '4px' }} onClick={() => openInlineEdit(test.id, test.title)}><Edit2 size={12} style={{ color: '#6B7280' }} /></button>
+                                                <button type="button" className="btn btn-secondary btn-small" style={{ padding: '4px', border: '1px solid rgba(248,113,113,0.14)', background: 'rgba(248,113,113,0.10)', borderRadius: '4px' }} onClick={() => setGenerationBatches(prev => prev.map(b => b.id === batch.id ? { ...b, testCases: b.testCases.filter((t: any) => t.id !== test.id) } : b).filter(b => b.testCases.length > 0))}><Trash2 size={12} style={{ color: '#C7402B' }} /></button>
+                                              </div>
+                                            </>
+                                          )}
+                                        </div>
+                                        <ol style={{ paddingLeft: '1.25rem', fontSize: '0.85rem', color: '#6B7280', display: 'flex', flexDirection: 'column', gap: '0.4rem', margin: 0 }}>
+                                          {test.steps.map((s: any, sIdx: number) => (
+                                            <li key={sIdx} style={{ lineHeight: '1.5' }}>
+                                              {s.instruction} <span style={{ color: '#2A4CE0', fontWeight: 600 }}>{'→'} {s.expected}</span>
+                                            </li>
+                                          ))}
+                                        </ol>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </>
                     );
-                  })}
+                  })()}
                 </div>
               )}
             </div>
@@ -1070,38 +1248,38 @@ export const Generator: React.FC = () => {
 
       {showModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.45)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-          <div className="glass-card" style={{ width: '100%', maxWidth: '920px', maxHeight: '88vh', display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden', border: '1px solid rgba(148,163,184,0.18)', background: '#141c30', borderRadius: '16px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.05)' }}>
+          <div className="glass-card" style={{ width: '100%', maxWidth: '920px', maxHeight: '88vh', display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden', border: '1px solid rgba(148,163,184,0.18)', background: '#FFFFFF', borderRadius: '16px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.05)' }}>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.25rem', borderBottom: '1px solid #1a2338', background: '#101828' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.25rem', borderBottom: '1px solid #E7E9EE', background: '#F3F4F7' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                 <div style={{ background: 'rgba(56,189,248,0.12)', padding: '6px', borderRadius: '6px', display: 'flex', alignItems: 'center' }}>
-                  <Cpu size={18} style={{ color: '#0284c7' }} />
+                  <Cpu size={18} style={{ color: '#1D6FB8' }} />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#e2e8f0', margin: 0 }}>OmniTestAI Generation Analytics</h2>
-                  <span style={{ fontSize: '0.7rem', color: '#818cf8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '1px' }}>Active Batch: {activeBatchTitle}</span>
+                  <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#14151A', margin: 0 }}>OmniTestAI Generation Analytics</h2>
+                  <span style={{ fontSize: '0.7rem', color: '#4C63D2', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '1px' }}>Active Batch: {activeBatchTitle}</span>
                 </div>
               </div>
-              <button type="button" style={{ background: '#141c30', border: '1px solid rgba(148,163,184,0.18)', color: '#94a3b8', cursor: 'pointer', padding: '6px', borderRadius: '50%' }} onClick={() => setShowModal(false)}><X size={16} /></button>
+              <button type="button" style={{ background: '#FFFFFF', border: '1px solid rgba(148,163,184,0.18)', color: '#6B7280', cursor: 'pointer', padding: '6px', borderRadius: '50%' }} onClick={() => setShowModal(false)}><X size={16} /></button>
             </div>
 
-            <div style={{ padding: '1.5rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1.5rem', flex: 1, background: '#141c30' }}>
+            <div style={{ padding: '1.5rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1.5rem', flex: 1, background: '#FFFFFF' }}>
 
               <>
-                <div style={{ background: '#05070a', padding: '1.25rem', borderRadius: '10px', border: '1px solid #e2e8f0', fontFamily: 'monospace', boxShadow: '0 4px 10px rgba(0,0,0,0.2)' }}>
-                    <div style={{ borderBottom: '1px solid #111a2e', paddingBottom: '0.5rem', marginBottom: '0.75rem', display: 'flex', gap: '4px', alignItems: 'center' }}>
+                <div style={{ background: '#0B0D12', padding: '1.25rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.14)', fontFamily: 'monospace', boxShadow: '0 4px 10px rgba(0,0,0,0.2)' }}>
+                    <div style={{ borderBottom: '1px solid rgba(255,255,255,0.12)', paddingBottom: '0.5rem', marginBottom: '0.75rem', display: 'flex', gap: '4px', alignItems: 'center' }}>
                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ff5f56' }}></div>
                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ffbd2e' }}></div>
                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#27c93f' }}></div>
-                       <span style={{ fontSize: '0.65rem', color: '#94a3b8', marginLeft: '0.5rem', fontWeight: 700, letterSpacing: '0.05em' }}>EXECUTION_LOG</span>
+                       <span style={{ fontSize: '0.65rem', color: '#6B7280', marginLeft: '0.5rem', fontWeight: 700, letterSpacing: '0.05em' }}>EXECUTION_LOG</span>
                        {generationElapsedSec !== null && (
-                         <span style={{ marginLeft: 'auto', fontSize: '0.7rem', color: '#94a3b8', fontFamily: 'monospace' }}>⏱ {generationElapsedSec}s</span>
+                         <span style={{ marginLeft: 'auto', fontSize: '0.7rem', color: '#6B7280', fontFamily: 'monospace' }}>⏱ {generationElapsedSec}s</span>
                        )}
                     </div>
                     <div style={{ minHeight: '100px', maxHeight: '160px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                       {modalLogs.map((log, index) => (
-                        <div key={index} style={{ color: log.type === 'success' ? '#4ade80' : log.type === 'warning' ? '#fbbf24' : '#38bdf8', fontSize: '0.8rem', lineHeight: '1.4' }}>
-                          <span style={{ color: '#475467' }}>[{log.timestamp}]</span> <span style={{ fontWeight: 'bold' }}>{log.type.toUpperCase()}:</span> <span>{log.message}</span>
+                        <div key={index} style={{ color: log.type === 'success' ? '#157F52' : log.type === 'warning' ? '#B4790A' : '#1D6FB8', fontSize: '0.8rem', lineHeight: '1.4' }}>
+                          <span style={{ color: '#4B4E5A' }}>[{log.timestamp}]</span> <span style={{ fontWeight: 'bold' }}>{log.type.toUpperCase()}:</span> <span>{log.message}</span>
                         </div>
                       ))}
                       <div ref={consoleBottomRef} />
@@ -1112,47 +1290,47 @@ export const Generator: React.FC = () => {
                     <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 2fr', gap: '1.5rem' }}>
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        <div style={{ background: '#101828', border: '1px solid rgba(148,163,184,0.18)', padding: '1.25rem', borderRadius: '10px' }}>
+                        <div style={{ background: '#F3F4F7', border: '1px solid rgba(148,163,184,0.18)', padding: '1.25rem', borderRadius: '10px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
-                            <Layers size={14} style={{ color: '#818cf8' }} />
-                            <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Test Type Breakdown</span>
+                            <Layers size={14} style={{ color: '#4C63D2' }} />
+                            <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Test Type Breakdown</span>
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 500 }}>Happy Path (positive)</span>
-                              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#15803d', background: 'rgba(74,222,128,0.14)', padding: '2px 8px', borderRadius: '4px' }}>{activeBatchMetrics.happyPaths}</span>
+                              <span style={{ fontSize: '0.8rem', color: '#6B7280', fontWeight: 500 }}>Happy Path (positive)</span>
+                              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#157F52', background: 'rgba(74,222,128,0.14)', padding: '2px 8px', borderRadius: '4px' }}>{activeBatchMetrics.happyPaths}</span>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 500 }}>Boundary / Edge Cases</span>
-                              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#b45309', background: 'rgba(251,191,36,0.14)', padding: '2px 8px', borderRadius: '4px' }}>{activeBatchMetrics.edgeCases}</span>
+                              <span style={{ fontSize: '0.8rem', color: '#6B7280', fontWeight: 500 }}>Boundary / Edge Cases</span>
+                              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#8F5D08', background: 'rgba(251,191,36,0.14)', padding: '2px 8px', borderRadius: '4px' }}>{activeBatchMetrics.edgeCases}</span>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 500 }}>Negative / Error Flows</span>
-                              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#fca5a5', background: 'rgba(248,113,113,0.14)', padding: '2px 8px', borderRadius: '4px' }}>{activeBatchMetrics.negativeFlows}</span>
+                              <span style={{ fontSize: '0.8rem', color: '#6B7280', fontWeight: 500 }}>Negative / Error Flows</span>
+                              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#C7402B', background: 'rgba(248,113,113,0.14)', padding: '2px 8px', borderRadius: '4px' }}>{activeBatchMetrics.negativeFlows}</span>
                             </div>
                           </div>
                         </div>
                         {generationElapsedSec !== null && (
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.4rem 0.75rem', background: '#1a2338', borderRadius: '6px', border: '1px solid rgba(148,163,184,0.18)' }}>
-                            <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600, letterSpacing: '0.03em' }}>⏱ Generation Time</span>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.4rem 0.75rem', background: '#E7E9EE', borderRadius: '6px', border: '1px solid rgba(148,163,184,0.18)' }}>
+                            <span style={{ fontSize: '0.72rem', color: '#6B7280', fontWeight: 600, letterSpacing: '0.03em' }}>⏱ Generation Time</span>
                             <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#000000', fontFamily: 'monospace' }}>{generationElapsedSec}s</span>
                           </div>
                         )}
                       </div>
 
-                      <div style={{ background: '#020617', borderRadius: '12px', padding: '1.25rem', fontFamily: 'monospace', fontSize: '0.75rem', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
+                      <div style={{ background: '#0B0D12', borderRadius: '12px', padding: '1.25rem', fontFamily: 'monospace', fontSize: '0.75rem', border: '1px solid rgba(255,255,255,0.14)', display: 'flex', flexDirection: 'column' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                          <span style={{ color: '#38bdf8', fontWeight: 700 }}>GEMINI CALL TRACE</span>
+                          <span style={{ color: '#1D6FB8', fontWeight: 700 }}>GEMINI CALL TRACE</span>
                           {activeBatchMetrics.generationTrace && (
-                            <span style={{ color: '#10b981', fontSize: '0.65rem', background: 'rgba(16,185,129,0.1)', padding: '2px 6px', borderRadius: '4px' }}>{activeBatchMetrics.generationTrace.model}</span>
+                            <span style={{ color: '#157F52', fontSize: '0.65rem', background: 'rgba(16,185,129,0.1)', padding: '2px 6px', borderRadius: '4px' }}>{activeBatchMetrics.generationTrace.model}</span>
                           )}
                         </div>
 
                         {activeBatchMetrics.generationTrace ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', color: '#94a3b8', flex: 1 }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', color: '#6B7280', flex: 1 }}>
                             <div>
-                              <div style={{ color: '#101828', marginBottom: '0.2rem' }}>[01] PASS 1 — Blueprint Discovery:</div>
-                              <div style={{ paddingLeft: '0.75rem', borderLeft: '1px solid #cbd5e1' }}>
+                              <div style={{ color: '#F3F4F7', marginBottom: '0.2rem' }}>[01] PASS 1 — Blueprint Discovery:</div>
+                              <div style={{ paddingLeft: '0.75rem', borderLeft: '1px solid #4B4E5A' }}>
                                 - Time: {activeBatchMetrics.generationTrace.pass1_time_sec}s<br />
                                 - Tokens: {activeBatchMetrics.generationTrace.pass1_input_tokens} in / {activeBatchMetrics.generationTrace.pass1_output_tokens} out
                                 {activeBatchMetrics.generationTrace.topup_fired && (
@@ -1164,10 +1342,10 @@ export const Generator: React.FC = () => {
                               </div>
                               {activeBatchMetrics.generationTrace.feature_breakdown && Object.keys(activeBatchMetrics.generationTrace.feature_breakdown).length > 0 && (
                                 <div style={{ paddingLeft: '0.75rem', marginTop: '0.5rem' }}>
-                                  <div style={{ color: '#94a3b8', marginBottom: '0.25rem' }}>Per-feature breakdown:</div>
+                                  <div style={{ color: '#6B7280', marginBottom: '0.25rem' }}>Per-feature breakdown:</div>
                                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
                                     {Object.entries(activeBatchMetrics.generationTrace.feature_breakdown as Record<string, number>).map(([feature, n]) => (
-                                      <span key={feature} style={{ background: 'rgba(56,189,248,0.1)', color: '#38bdf8', borderRadius: '4px', padding: '2px 6px', fontSize: '0.7rem' }}>
+                                      <span key={feature} style={{ background: 'rgba(56,189,248,0.1)', color: '#1D6FB8', borderRadius: '4px', padding: '2px 6px', fontSize: '0.7rem' }}>
                                         {feature}: {n}
                                       </span>
                                     ))}
@@ -1178,8 +1356,8 @@ export const Generator: React.FC = () => {
 
                             {activeBatchMetrics.generationTrace.category_breakdown && (
                               <div>
-                                <div style={{ color: '#101828', marginBottom: '0.2rem' }}>[01b] Category Split:</div>
-                                <div style={{ paddingLeft: '0.75rem', borderLeft: '1px solid #cbd5e1', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                                <div style={{ color: '#F3F4F7', marginBottom: '0.2rem' }}>[01b] Category Split:</div>
+                                <div style={{ paddingLeft: '0.75rem', borderLeft: '1px solid #4B4E5A', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
                                   {CATEGORY_ORDER.map((catKey) => {
                                     const breakdown = activeBatchMetrics.generationTrace.category_breakdown as Record<string, number>;
                                     const targets = activeBatchMetrics.generationTrace.category_targets as Record<string, { target: number; min: number; max: number }> | undefined;
@@ -1193,10 +1371,10 @@ export const Generator: React.FC = () => {
                                     // trusting the count silently.
                                     const atBound = t && (count <= t.min || count >= t.max);
                                     return (
-                                      <div key={catKey} style={{ color: '#94a3b8' }}>
-                                        <span style={{ color: meta?.color || '#38bdf8' }}>{meta?.label || catKey}</span>: {count}
-                                        {t && <span style={{ color: '#94a3b8' }}> (target ~{t.target}, bounds {t.min}–{t.max})</span>}
-                                        {atBound && <span style={{ color: '#fbbf24' }}> ⚠ at bound — verify coverage</span>}
+                                      <div key={catKey} style={{ color: '#6B7280' }}>
+                                        <span style={{ color: meta?.color || '#1D6FB8' }}>{meta?.label || catKey}</span>: {count}
+                                        {t && <span style={{ color: '#6B7280' }}> (target ~{t.target}, bounds {t.min}–{t.max})</span>}
+                                        {atBound && <span style={{ color: '#B4790A' }}> ⚠ at bound — verify coverage</span>}
                                       </div>
                                     );
                                   })}
@@ -1205,20 +1383,20 @@ export const Generator: React.FC = () => {
                             )}
 
                             <div>
-                              <div style={{ color: '#101828', marginBottom: '0.2rem' }}>[02] PASS 2 — Step Expansion:</div>
-                              <div style={{ paddingLeft: '0.75rem', borderLeft: '1px solid #cbd5e1' }}>
+                              <div style={{ color: '#F3F4F7', marginBottom: '0.2rem' }}>[02] PASS 2 — Step Expansion:</div>
+                              <div style={{ paddingLeft: '0.75rem', borderLeft: '1px solid #4B4E5A' }}>
                                 - Time: {activeBatchMetrics.generationTrace.pass2_time_sec}s<br />
                                 - Calls: {activeBatchMetrics.generationTrace.pass2_call_count}<br />
                                 - Tokens: {activeBatchMetrics.generationTrace.pass2_input_tokens} in / {activeBatchMetrics.generationTrace.pass2_output_tokens} out
                               </div>
                             </div>
 
-                            <div style={{ marginTop: 'auto', padding: '0.6rem', background: 'rgba(30, 41, 59, 0.4)', borderRadius: '6px', color: '#38bdf8', lineHeight: '1.4' }}>
+                            <div style={{ marginTop: 'auto', padding: '0.6rem', background: 'rgba(30, 41, 59, 0.4)', borderRadius: '6px', color: '#1D6FB8', lineHeight: '1.4' }}>
                               <strong>TOTAL:</strong> {activeBatchMetrics.generationTrace.total_tokens} tokens across {activeBatchMetrics.generationTrace.total_time_sec}s.
                             </div>
                           </div>
                         ) : (
-                          <div style={{ color: '#94a3b8' }}>No trace data available for this batch.</div>
+                          <div style={{ color: '#6B7280' }}>No trace data available for this batch.</div>
                         )}
                       </div>
 
@@ -1227,13 +1405,13 @@ export const Generator: React.FC = () => {
               </>
             </div>
 
-            <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid #1a2338', background: '#101828', display: 'flex', justifyContent: 'flex-end' }}>
+            <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid #E7E9EE', background: '#F3F4F7', display: 'flex', justifyContent: 'flex-end' }}>
               {isGenerating && (
-                <button type="button" onClick={handleStopGeneration} style={{ background: 'rgba(248,113,113,0.14)', border: '1px solid #fca5a5', color: '#f87171', fontWeight: 700, borderRadius: '6px', height: '34px', padding: '0 1rem', cursor: 'pointer', fontSize: '0.85rem' }}>
+                <button type="button" onClick={handleStopGeneration} style={{ background: 'rgba(248,113,113,0.14)', border: '1px solid #C7402B', color: '#C7402B', fontWeight: 700, borderRadius: '6px', height: '34px', padding: '0 1rem', cursor: 'pointer', fontSize: '0.85rem' }}>
                   ⏹ Stop Generation
                 </button>
               )}
-              <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowModal(false)} style={{ background: '#141c30', border: '1px solid rgba(148,163,184,0.22)', color: '#cbd5e1', fontWeight: 600, borderRadius: '6px', height: '34px', padding: '0 1rem', cursor: 'pointer' }}>Close Analytics Dashboard</button>
+              <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowModal(false)} style={{ background: '#FFFFFF', border: '1px solid rgba(148,163,184,0.22)', color: '#4B4E5A', fontWeight: 600, borderRadius: '6px', height: '34px', padding: '0 1rem', cursor: 'pointer' }}>Close Analytics Dashboard</button>
             </div>
           </div>
         </div>
@@ -1241,22 +1419,22 @@ export const Generator: React.FC = () => {
 
       {showCoverageModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-          <div className="glass-card" style={{ width: '100%', maxWidth: '820px', maxHeight: '88vh', display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden', border: '1px solid rgba(148,163,184,0.18)', background: '#141c30', borderRadius: '16px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.05)' }}>
+          <div className="glass-card" style={{ width: '100%', maxWidth: '820px', maxHeight: '88vh', display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden', border: '1px solid rgba(148,163,184,0.18)', background: '#FFFFFF', borderRadius: '16px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.05)' }}>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.25rem', borderBottom: '1px solid #1a2338', background: '#101828' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.25rem', borderBottom: '1px solid #E7E9EE', background: '#F3F4F7' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                 <div style={{ background: 'rgba(129,140,248,0.12)', padding: '6px', borderRadius: '6px', display: 'flex', alignItems: 'center' }}>
-                  <Activity size={18} style={{ color: '#a5b4fc' }} />
+                  <Activity size={18} style={{ color: '#4C63D2' }} />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#e2e8f0', margin: 0 }}>Coverage Index</h2>
-                  <span style={{ fontSize: '0.7rem', color: '#818cf8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '1px' }}>{activeApp?.name || 'No application selected'}</span>
+                  <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#14151A', margin: 0 }}>Coverage Index</h2>
+                  <span style={{ fontSize: '0.7rem', color: '#4C63D2', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '1px' }}>{activeApp?.name || 'No application selected'}</span>
                 </div>
               </div>
-              <button type="button" style={{ background: '#141c30', border: '1px solid rgba(148,163,184,0.18)', color: '#94a3b8', cursor: 'pointer', padding: '6px', borderRadius: '50%' }} onClick={() => setShowCoverageModal(false)}><X size={16} /></button>
+              <button type="button" style={{ background: '#FFFFFF', border: '1px solid rgba(148,163,184,0.18)', color: '#6B7280', cursor: 'pointer', padding: '6px', borderRadius: '50%' }} onClick={() => setShowCoverageModal(false)}><X size={16} /></button>
             </div>
 
-            <div style={{ padding: '1.5rem', overflowY: 'auto', flex: 1, background: '#141c30' }}>
+            <div style={{ padding: '1.5rem', overflowY: 'auto', flex: 1, background: '#FFFFFF' }}>
               <CoverageIndexPanel
                 loading={scoutLoading}
                 error={scoutError}
@@ -1267,8 +1445,8 @@ export const Generator: React.FC = () => {
               />
             </div>
 
-            <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid #1a2338', background: '#101828', display: 'flex', justifyContent: 'flex-end' }}>
-              <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowCoverageModal(false)} style={{ background: '#141c30', border: '1px solid rgba(148,163,184,0.22)', color: '#cbd5e1', fontWeight: 600, borderRadius: '6px', height: '34px', padding: '0 1rem', cursor: 'pointer' }}>Close</button>
+            <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid #E7E9EE', background: '#F3F4F7', display: 'flex', justifyContent: 'flex-end' }}>
+              <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowCoverageModal(false)} style={{ background: '#FFFFFF', border: '1px solid rgba(148,163,184,0.22)', color: '#4B4E5A', fontWeight: 600, borderRadius: '6px', height: '34px', padding: '0 1rem', cursor: 'pointer' }}>Close</button>
             </div>
           </div>
         </div>

@@ -1,49 +1,65 @@
-@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 :root {
-  /* Colors — OmniTestAI Forge dark theme: deep indigo-navy base,
-     cyan -> violet accent gradient, warm amber/rose reserved for status. */
-  --bg-darker: #05070d;        /* Page background, outside all panels */
-  --bg-main: #0a0f1c;          /* Main content area background */
-  --bg-card: #121a2b;          /* Card / surface background */
-  --bg-card-hover: #17213a;    /* Hover state for cards/rows */
-  --bg-panel: #0c1220;         /* Sidebar / panel background */
-  --bg-input: #0e1526;         /* Input field background */
+  /* Colors — OmniTestAI Forge "Blueprint" theme: a light, precise,
+     engineering-grade palette. Cool paper-white canvas, ink-navy text,
+     one confident signal-blue accent for action, teal reserved for AI /
+     verification moments. Built to read as a serious instrument, not a
+     dashboard template. */
+  --bg-darker: #EEF0F4;        /* Page canvas, outside all panels */
+  --bg-main: #F4F5F7;          /* Main content area background */
+  --bg-card: #FFFFFF;          /* Card / surface background */
+  --bg-card-hover: #F7F8FA;    /* Hover state for cards/rows */
+  --bg-panel: #FFFFFF;         /* Sidebar / panel background */
+  --bg-input: #F5F6F9;         /* Input field background */
 
-  --border-light: rgba(148, 163, 184, 0.14);  /* Subtle hairline border */
-  --border-focus: #22d3ee;     /* Focus ring — cyan */
+  --border-light: rgba(20, 23, 32, 0.10);   /* Subtle hairline border */
+  --border-focus: #2A4CE0;     /* Focus ring — signal blue */
 
-  --text-main: #f1f5f9;        /* High-contrast light text */
-  --text-secondary: #a3b1c6;   /* Secondary text */
-  --text-muted: #6b7a94;       /* Muted / disabled text */
+  --text-main: #14151A;        /* High-contrast ink text */
+  --text-secondary: #4B4E5A;   /* Secondary text */
+  --text-muted: #7B7F8C;       /* Muted / disabled text */
 
-  --accent-purple: #6366f1;    /* Primary accent — indigo */
-  --accent-purple-glow: rgba(99, 102, 241, 0.18);
-  --accent-cyan: #22d3ee;      /* Secondary accent — cyan */
-  --accent-cyan-glow: rgba(34, 211, 238, 0.22);
+  --accent-purple: #2A4CE0;    /* Primary accent — signal blue */
+  --accent-purple-glow: rgba(42, 76, 224, 0.16);
+  --accent-cyan: #2A4CE0;      /* Kept as an alias so every existing
+                                   --accent-cyan reference (badges, focus
+                                   rings, gradients) resolves to the new
+                                   signal-blue brand color automatically. */
+  --accent-cyan-glow: rgba(42, 76, 224, 0.16);
 
-  --color-success: #34d399;    /* Emerald green for success */
-  --color-success-bg: rgba(52, 211, 153, 0.12);
-  --color-error: #f87171;      /* Rose-red for error */
-  --color-error-bg: rgba(248, 113, 113, 0.12);
-  --color-warning: #fbbf24;    /* Amber for warning */
-  --color-warning-bg: rgba(251, 191, 36, 0.12);
-  --color-info: #38bdf8;       /* Sky blue for info */
-  --color-info-bg: rgba(56, 189, 248, 0.12);
+  --accent-teal: #0E8F82;      /* Secondary accent — verification teal */
+  --accent-teal-glow: rgba(14, 143, 130, 0.16);
+  --accent-violet: #6E4CC9;    /* Tertiary accent — used sparingly */
 
-  /* Fonts */
-  --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'Fira Code', 'Courier New', Courier, monospace;
+  --color-success: #157F52;
+  --color-success-bg: rgba(21, 127, 82, 0.10);
+  --color-error: #C7402B;
+  --color-error-bg: rgba(199, 64, 43, 0.09);
+  --color-warning: #B4790A;
+  --color-warning-bg: rgba(180, 121, 10, 0.10);
+  --color-info: #1D6FB8;
+  --color-info-bg: rgba(29, 111, 184, 0.10);
 
-  /* Shadows & Radius */
-  --glow-purple: 0 10px 30px rgba(99, 102, 241, 0.18);
-  --glow-cyan: 0 10px 30px rgba(34, 211, 238, 0.16);
-  --shadow-lg: 0 20px 45px rgba(0, 0, 0, 0.45);
-  --radius-sm: 6px;
+  /* Fonts — a technical display face for headings, a neutral workhorse
+     for body copy, and a mono face for anything that reads like data. */
+  --font-display: 'Space Grotesk', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', Courier, monospace;
+
+  /* Shadows & Radius — soft ink shadows instead of pure black, slightly
+     tighter radii than a generic SaaS template. */
+  --glow-purple: 0 10px 24px rgba(42, 76, 224, 0.14);
+  --glow-cyan: 0 10px 24px rgba(42, 76, 224, 0.14);
+  --shadow-sm: 0 1px 2px rgba(20, 21, 26, 0.06);
+  --shadow-md: 0 8px 20px rgba(20, 21, 26, 0.08);
+  --shadow-lg: 0 24px 48px rgba(20, 21, 26, 0.10);
+  --radius-sm: 8px;
   --radius-md: 12px;
-  --radius-lg: 20px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
 
-  --sidebar-width: 280px;
+  --sidebar-width: 272px;
   --sidebar-width-collapsed: 84px;
 }
 
@@ -62,31 +78,35 @@ html, body {
   color: var(--text-main);
   font-family: var(--font-sans);
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
 #root {
   display: flex;
   min-height: 100vh;
   width: 100vw;
-  background: radial-gradient(circle at 85% 10%, rgba(34, 211, 238, 0.10) 0%, transparent 45%),
-              radial-gradient(circle at 15% 85%, rgba(99, 102, 241, 0.12) 0%, transparent 45%),
-              var(--bg-main);
+  background:
+    linear-gradient(180deg, rgba(20, 23, 32, 0.02) 0%, transparent 220px),
+    var(--bg-main);
 }
 
 /* Scrollbars */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--bg-darker);
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border-light);
+  background: rgba(20, 23, 32, 0.16);
   border-radius: var(--radius-sm);
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
+  background: rgba(20, 23, 32, 0.28);
+  background-clip: padding-box;
 }
 
 /* Layout */
@@ -98,31 +118,33 @@ html, body {
 
 .main-content {
   flex: 1;
-  padding: 2.5rem;
+  padding: 2.25rem 2.75rem;
   overflow-y: auto;
   height: 100vh;
 }
 
 /* Typography */
 h1 {
-  font-size: 2.25rem;
+  font-family: var(--font-display);
+  font-size: 2.1rem;
   font-weight: 700;
-  letter-spacing: -0.5px;
-  background: linear-gradient(135deg, var(--text-main) 30%, var(--accent-cyan) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.02em;
+  color: var(--text-main);
   margin-bottom: 0.5rem;
 }
 
 h2 {
-  font-size: 1.5rem;
+  font-family: var(--font-display);
+  font-size: 1.4rem;
   font-weight: 600;
+  letter-spacing: -0.01em;
   color: var(--text-main);
 }
 
 h3 {
-  font-size: 1.15rem;
-  font-weight: 500;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 600;
   color: var(--text-main);
 }
 
@@ -131,22 +153,42 @@ p {
   line-height: 1.6;
 }
 
-/* Glassmorphism Cards */
+/* Section eyebrow — small mono label used above headings throughout the
+   app; a quiet nod to the "spec sheet" identity without overusing it. */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-purple);
+}
+
+.eyebrow::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
+  background: var(--accent-purple);
+  display: inline-block;
+}
+
+/* Cards */
 .glass-card {
   background: var(--bg-card);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border-light);
   border-radius: var(--radius-md);
   padding: 1.5rem;
-  box-shadow: var(--shadow-lg);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .glass-card.hoverable:hover {
-  background: var(--bg-card-hover);
-  border-color: rgba(99, 102, 241, 0.35);
-  box-shadow: var(--glow-purple), var(--shadow-lg);
+  border-color: rgba(42, 76, 224, 0.25);
+  box-shadow: var(--shadow-md);
   transform: translateY(-2px);
 }
 
@@ -167,18 +209,23 @@ p {
 .input-field, .select-field, .textarea-field {
   width: 100%;
   background-color: var(--bg-input);
-  border: 1px solid var(--border-light);
+  border: 1.5px solid var(--border-light);
   color: var(--text-main);
-  padding: 0.75rem 1rem;
+  padding: 0.7rem 0.9rem;
   border-radius: var(--radius-sm);
   font-family: var(--font-sans);
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   outline: none;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
+}
+
+.input-field::placeholder, .textarea-field::placeholder {
+  color: var(--text-muted);
 }
 
 .input-field:focus, .select-field:focus, .textarea-field:focus {
-  border-color: var(--accent-cyan);
+  border-color: var(--accent-purple);
+  background-color: var(--bg-card);
   box-shadow: 0 0 0 3px var(--accent-cyan-glow);
 }
 
@@ -194,55 +241,55 @@ p {
   justify-content: center;
   gap: 0.5rem;
   font-family: var(--font-sans);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  padding: 0.75rem 1.5rem;
+  padding: 0.7rem 1.35rem;
   border-radius: var(--radius-sm);
   border: none;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   text-decoration: none;
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--accent-purple) 0%, #4f46e5 100%);
-  color: white;
-  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+  background: var(--accent-purple);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(42, 76, 224, 0.28);
 }
 
 .btn-primary:hover {
-  filter: brightness(1.1);
+  background: #223CBA;
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 6px 16px rgba(42, 76, 224, 0.34);
 }
 
 .btn-secondary {
-  background: rgba(148, 163, 184, 0.06);
-  border: 1px solid var(--border-light);
+  background: #fff;
+  border: 1.5px solid var(--border-light);
   color: var(--text-main);
 }
 
 .btn-secondary:hover {
-  background: rgba(148, 163, 184, 0.14);
-  border-color: rgba(148, 163, 184, 0.35);
+  background: var(--bg-card-hover);
+  border-color: rgba(20, 23, 32, 0.22);
 }
 
 .btn-accent {
-  background: var(--accent-cyan);
-  color: #05070d;
-  box-shadow: 0 4px 12px rgba(34, 211, 238, 0.25);
+  background: var(--accent-teal);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(14, 143, 130, 0.25);
 }
 
 .btn-accent:hover {
-  background: #67e8f9;
-  color: #05070d;
+  background: #0B7368;
+  color: #fff;
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(34, 211, 238, 0.4);
+  box-shadow: 0 6px 16px rgba(14, 143, 130, 0.32);
 }
 
 .btn-danger {
   background: var(--color-error-bg);
-  border: 1px solid rgba(255, 56, 56, 0.3);
+  border: 1px solid rgba(199, 64, 43, 0.28);
   color: var(--color-error);
 }
 
@@ -253,8 +300,8 @@ p {
 
 .btn-small {
   padding: 0.4rem 0.8rem;
-  font-size: 0.85rem;
-  border-radius: 4px;
+  font-size: 0.82rem;
+  border-radius: 6px;
 }
 
 /* Badges & Status */
@@ -263,40 +310,41 @@ p {
   align-items: center;
   gap: 0.35rem;
   padding: 0.25rem 0.6rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  border-radius: 6px;
   text-transform: uppercase;
 }
 
 .badge-success {
   background-color: var(--color-success-bg);
   color: var(--color-success);
-  border: 1px solid rgba(0, 255, 136, 0.2);
+  border: 1px solid rgba(21, 127, 82, 0.2);
 }
 
 .badge-error {
   background-color: var(--color-error-bg);
   color: var(--color-error);
-  border: 1px solid rgba(255, 56, 56, 0.2);
+  border: 1px solid rgba(199, 64, 43, 0.2);
 }
 
 .badge-warning {
   background-color: var(--color-warning-bg);
   color: var(--color-warning);
-  border: 1px solid rgba(255, 179, 0, 0.2);
+  border: 1px solid rgba(180, 121, 10, 0.2);
 }
 
 .badge-info {
   background-color: var(--color-info-bg);
   color: var(--color-info);
-  border: 1px solid rgba(0, 176, 255, 0.2);
+  border: 1px solid rgba(29, 111, 184, 0.2);
 }
 
 .badge-purple {
-  background-color: rgba(167, 139, 250, 0.12);
-  color: #a78bfa;
-  border: 1px solid rgba(167, 139, 250, 0.3);
+  background-color: rgba(110, 76, 201, 0.10);
+  color: var(--accent-violet);
+  border: 1px solid rgba(110, 76, 201, 0.25);
 }
 
 /* Modals */
@@ -309,13 +357,13 @@ dialog {
   max-width: 500px;
   width: 90%;
   margin: auto;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), var(--glow-purple);
+  box-shadow: var(--shadow-lg);
   outline: none;
 }
 
 dialog::backdrop {
-  background-color: rgba(5, 5, 8, 0.8);
-  backdrop-filter: blur(8px);
+  background-color: rgba(15, 17, 23, 0.45);
+  backdrop-filter: blur(4px);
 }
 
 /* Terminal Console Simulator styling */
@@ -323,7 +371,7 @@ dialog::backdrop {
   background-color: #06060a;
   border: 1px solid var(--border-light);
   border-radius: var(--radius-md);
-  color: #e2e8f0;
+  color: #14151A;
   font-family: var(--font-mono);
   font-size: 0.85rem;
   padding: 1rem;
@@ -381,7 +429,7 @@ dialog::backdrop {
   min-width: 80px;
 }
 
-.console-type-info { color: #38bdf8; }
+.console-type-info { color: #1D6FB8; }
 .console-type-step { color: var(--accent-cyan); font-weight: bold; }
 .console-type-success { color: var(--color-success); }
 .console-type-error { color: var(--color-error); font-weight: bold; }
@@ -461,7 +509,7 @@ dialog::backdrop {
 /* Scanner target element highlighter */
 .browser-element-highlight {
   position: absolute;
-  border: 2px dashed #e11d48;
+  border: 2px dashed #C7402B;
   background-color: rgba(225, 29, 72, 0.15);
   border-radius: 4px;
   pointer-events: none;
@@ -474,7 +522,7 @@ dialog::backdrop {
   position: absolute;
   top: -24px;
   left: -2px;
-  background-color: #e11d48;
+  background-color: #C7402B;
   color: white;
   font-family: var(--font-sans);
   font-size: 0.65rem;
@@ -495,9 +543,23 @@ dialog::backdrop {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  padding: 1.5rem;
+  padding: 1.5rem 1.25rem;
   flex-shrink: 0;
   transition: width 0.25s ease, padding 0.25s ease;
+  position: relative;
+}
+
+/* A thin measurement rail down the outer edge — the one deliberate
+   "instrument panel" flourish in the shell, echoed nowhere else. */
+.sidebar-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 3px;
+  height: 100%;
+  background: linear-gradient(180deg, var(--accent-purple) 0%, var(--accent-teal) 100%);
+  opacity: 0.9;
 }
 
 .sidebar-brand {
@@ -513,8 +575,8 @@ dialog::backdrop {
   height: 24px;
   border: 1px solid var(--border-light);
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.08);
-  color: inherit;
+  background: var(--bg-input);
+  color: var(--text-secondary);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -522,23 +584,23 @@ dialog::backdrop {
 }
 
 .sidebar-collapse-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--bg-card-hover);
+  color: var(--text-main);
 }
 
 .brand-logo {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  background: linear-gradient(135deg, var(--accent-purple) 0%, var(--accent-cyan) 100%);
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--text-main);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--glow-purple);
+  box-shadow: var(--shadow-sm);
 }
 
 .logo-icon-glow {
-  color: var(--bg-darker);
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  color: #fff;
 }
 
 .brand-meta {
@@ -547,19 +609,19 @@ dialog::backdrop {
 }
 
 .brand-name {
-  font-size: 1.2rem;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
   font-weight: 700;
-  letter-spacing: -0.2px;
-  background: linear-gradient(135deg, var(--accent-purple) 0%, var(--accent-cyan) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.01em;
+  color: var(--text-main);
 }
 
 .brand-subtitle {
-  font-size: 0.65rem;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
   font-weight: 600;
-  color: var(--accent-cyan);
-  letter-spacing: 1.5px;
+  color: var(--accent-purple);
+  letter-spacing: 0.1em;
 }
 
 /* App Selector */
@@ -751,13 +813,13 @@ dialog::backdrop {
 
 .nav-button:hover {
   color: var(--text-main);
-  background-color: rgba(0, 61, 91, 0.04);
+  background-color: var(--bg-card-hover);
 }
 
 .nav-button.active {
-  color: var(--accent-cyan);
-  background: rgba(30, 187, 168, 0.08);
-  border-left: 3px solid var(--accent-cyan);
+  color: var(--accent-purple);
+  background: rgba(42, 76, 224, 0.07);
+  border-left: 3px solid var(--accent-purple);
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
   padding-left: 0.8rem;
@@ -941,7 +1003,7 @@ dialog::backdrop {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid var(--border-light);
   padding-top: 0.75rem;
   font-size: 0.75rem;
 }
@@ -991,25 +1053,25 @@ dialog::backdrop {
   align-items: center;
   justify-content: space-between;
   padding: 0.75rem 1rem;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-card);
   border: 1px solid var(--border-light);
   border-radius: var(--radius-sm);
   color: var(--text-secondary);
   font-family: var(--font-sans);
   font-size: 0.9rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .repo-folder-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-card-hover);
   color: var(--text-main);
 }
 
 .repo-folder-btn.active {
-  background: rgba(0, 61, 91, 0.08);
-  border-color: rgba(0, 61, 91, 0.3);
-  color: var(--text-main);
+  background: rgba(42, 76, 224, 0.08);
+  border-color: rgba(42, 76, 224, 0.3);
+  color: var(--accent-purple);
   font-weight: 600;
 }
 
@@ -1021,9 +1083,11 @@ dialog::backdrop {
 
 .folder-count {
   font-size: 0.75rem;
-  background: rgba(255, 255, 255, 0.05);
-  padding: 0.1rem 0.4rem;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  padding: 0.1rem 0.5rem;
   border-radius: 10px;
+  font-weight: 600;
 }
 
 .repo-main {
@@ -1108,7 +1172,7 @@ dialog::backdrop {
   height: 100vh;
   background-color: var(--bg-panel);
   border-left: 1px solid var(--border-light);
-  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.6);
+  box-shadow: -16px 0 40px rgba(20, 21, 26, 0.14);
   z-index: 100;
   padding: 2rem;
   display: flex;
@@ -1153,7 +1217,7 @@ dialog::backdrop {
 }
 
 .step-card {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-input);
   border: 1px solid var(--border-light);
   border-radius: var(--radius-sm);
   padding: 0.75rem 1rem;
@@ -1161,8 +1225,9 @@ dialog::backdrop {
 
 .step-header {
   font-size: 0.8rem;
-  color: var(--accent-cyan);
+  color: var(--accent-teal);
   font-family: var(--font-mono);
+  font-weight: 600;
   margin-bottom: 0.25rem;
 }
 
@@ -1220,7 +1285,7 @@ dialog::backdrop {
 }
 
 .generated-test-card {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-input);
   border: 1px solid var(--border-light);
   border-radius: var(--radius-sm);
   padding: 1rem;
@@ -1277,14 +1342,14 @@ dialog::backdrop {
   align-items: center;
   justify-content: space-between;
   padding: 0.5rem 1rem;
-  background-color: #101828;
+  background-color: #F3F4F7;
   border-bottom: 1px solid rgba(148,163,184,0.14);
 }
 
 .sim-logo {
   font-weight: 800;
   font-size: 0.85rem;
-  color: #f1f5f9;
+  color: #14151A;
 }
 
 .sim-nav {
@@ -1292,11 +1357,11 @@ dialog::backdrop {
   gap: 0.75rem;
   font-size: 0.75rem;
   font-weight: 500;
-  color: #94a3b8;
+  color: #6B7280;
 }
 
 .sim-cart-badge {
-  background-color: #e11d48;
+  background-color: #C7402B;
   color: white;
   padding: 1px 6px;
   border-radius: 10px;
@@ -1308,7 +1373,7 @@ dialog::backdrop {
   flex: 1;
   padding: 1rem;
   overflow-y: auto;
-  background-color: #0b1120;
+  background-color: #FFFFFF;
 }
 
 .sim-hero-banner {
@@ -1327,7 +1392,7 @@ dialog::backdrop {
 }
 
 .sim-hero-banner p {
-  color: #94a3b8;
+  color: #6B7280;
   font-size: 0.75rem;
 }
 
@@ -1338,7 +1403,7 @@ dialog::backdrop {
 }
 
 .sim-product-card {
-  background: #141c30;
+  background: #FFFFFF;
   border: 1px solid rgba(148,163,184,0.14);
   border-radius: 6px;
   padding: 0.75rem;
@@ -1351,19 +1416,19 @@ dialog::backdrop {
 .sim-product-title {
   font-weight: 600;
   font-size: 0.8rem;
-  color: #e2e8f0;
+  color: #14151A;
 }
 
 .sim-product-price {
   font-weight: 700;
   font-size: 0.75rem;
-  color: #f1f5f9;
+  color: #14151A;
 }
 
 .sim-form {
   max-width: 320px;
   margin: 1rem auto;
-  background: #141c30;
+  background: #FFFFFF;
   padding: 1rem;
   border-radius: 6px;
   border: 1px solid rgba(148,163,184,0.14);
@@ -1382,7 +1447,7 @@ dialog::backdrop {
 .sim-form-group label {
   font-size: 0.7rem;
   font-weight: 600;
-  color: #94a3b8;
+  color: #6B7280;
 }
 
 .sim-form-group input {
@@ -1391,16 +1456,16 @@ dialog::backdrop {
   border: 1px solid rgba(148,163,184,0.25);
   border-radius: 4px;
   outline: none;
-  background: #0b1120;
-  color: #f1f5f9;
+  background: #FFFFFF;
+  color: #14151A;
 }
 
 .sim-form-group input:focus {
-  border-color: #38bdf8;
+  border-color: #1D6FB8;
 }
 
 .sim-btn {
-  background-color: #22d3ee;
+  background-color: #2A4CE0;
   color: white;
   padding: 0.45rem;
   border-radius: 4px;
@@ -1412,7 +1477,7 @@ dialog::backdrop {
 }
 
 .sim-btn-primary {
-  background-color: #6366f1;
+  background-color: #2A4CE0;
   color: #fff;
 }
 
@@ -1421,9 +1486,9 @@ dialog::backdrop {
   width: 260px;
   height: 480px;
   margin: auto;
-  border: 8px solid #05070d;
+  border: 8px solid #F4F5F7;
   border-radius: 36px;
-  background-color: #0b1120;
+  background-color: #FFFFFF;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1433,7 +1498,7 @@ dialog::backdrop {
 .phone-speaker {
   width: 60px;
   height: 6px;
-  background-color: #05070d;
+  background-color: #F4F5F7;
   border-radius: 10px;
   margin: 6px auto;
   flex-shrink: 0;
@@ -1500,7 +1565,7 @@ dialog::backdrop {
 
 .kanban-col {
   flex: 1;
-  background-color: #f1f5f9;
+  background-color: #14151A;
   border-radius: 6px;
   padding: 0.5rem;
   display: flex;
@@ -1513,18 +1578,18 @@ dialog::backdrop {
   font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
-  color: #475569;
+  color: #4B4E5A;
   margin-bottom: 0.25rem;
   padding: 2px 4px;
   border-radius: 3px;
-  background: #e2e8f0;
+  background: #14151A;
 }
 
 .kanban-card {
   background: white;
   border-radius: 4px;
   padding: 0.5rem;
-  border: 1px solid #cbd5e1;
+  border: 1px solid #4B4E5A;
   box-shadow: 0 1px 2px rgba(0,0,0,0.05);
   font-size: 0.7rem;
   display: flex;
@@ -1606,23 +1671,16 @@ dialog::backdrop {
 
 /* ==========================================================================
    OMNITESTAI FORGE — SIDEBAR THEME
-   Deep navy panel with a cyan -> indigo gradient brand mark. All values
-   route through the :root palette so the whole sidebar reskins from one
-   place (see :root at the top of this file).
+   A clean white instrument panel with a single measurement rail on the
+   outer edge (see .sidebar-container::after above). Everything routes
+   through the :root palette so the whole sidebar reskins from one place.
    ========================================================================== */
-.sidebar-container {
-  background-color: var(--bg-panel);
-  border-right: 1px solid var(--border-light);
-}
-
 .sidebar-container .brand-name {
-  background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-purple) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--text-main);
 }
 
 .sidebar-container .brand-subtitle {
-  color: var(--accent-cyan);
+  color: var(--accent-purple);
 }
 
 .sidebar-container .brand-logo {
@@ -1631,11 +1689,8 @@ dialog::backdrop {
   position: relative;
 }
 
-.sidebar-container .logo-icon-glow {
-  color: var(--bg-panel);
-}
-
 .sidebar-container .selector-label {
+  font-family: var(--font-mono);
   color: var(--text-muted);
 }
 
@@ -1644,13 +1699,13 @@ dialog::backdrop {
 }
 
 .sidebar-container .app-select {
-  background-color: rgba(0, 0, 0, 0.25);
+  background-color: var(--bg-input);
   border: 1px solid var(--border-light);
   color: var(--text-main);
 }
 
 .sidebar-container .app-select:focus {
-  border-color: var(--accent-cyan);
+  border-color: var(--accent-purple);
   box-shadow: 0 0 0 3px var(--accent-cyan-glow);
 }
 
@@ -1660,18 +1715,18 @@ dialog::backdrop {
 }
 
 .sidebar-container .app-selector-section .btn-secondary {
-  background-color: rgba(148, 163, 184, 0.08);
+  background-color: var(--bg-input);
   border: 1px solid var(--border-light);
   color: var(--text-main);
 }
 
 .sidebar-container .app-selector-section .btn-secondary:hover {
-  background-color: rgba(148, 163, 184, 0.16);
-  border-color: rgba(148, 163, 184, 0.3);
+  background-color: var(--bg-card-hover);
+  border-color: rgba(20, 23, 32, 0.22);
 }
 
 .sidebar-container .active-app-badge-details {
-  background-color: rgba(148, 163, 184, 0.05);
+  background-color: var(--bg-input);
   border: 1px solid var(--border-light);
   color: var(--text-secondary);
 }
@@ -1689,21 +1744,6 @@ dialog::backdrop {
   color: var(--text-secondary);
 }
 
-.sidebar-container .nav-button:hover {
-  color: var(--text-main);
-  background-color: rgba(148, 163, 184, 0.08);
-}
-
-.sidebar-container .nav-button.active {
-  color: var(--text-main);
-  background-color: rgba(34, 211, 238, 0.09);
-  border-left: 3px solid var(--accent-cyan);
-}
-
-.sidebar-container .nav-button.active .nav-icon {
-  color: var(--accent-cyan);
-}
-
 .sidebar-container .sidebar-footer {
   border-top: 1px solid var(--border-light);
   color: var(--text-muted);
@@ -1711,7 +1751,7 @@ dialog::backdrop {
 
 .sidebar-container.collapsed .nav-button.active {
   border-left: none;
-  border: 1px solid var(--accent-cyan);
+  border: 1px solid var(--accent-purple);
   border-radius: 8px;
 }
 
@@ -1721,8 +1761,8 @@ dialog::backdrop {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #05070d;
-  color: #94a3b8;
+  background: var(--bg-darker);
+  color: var(--text-muted);
   font-family: var(--font-sans);
   font-size: 0.95rem;
 }

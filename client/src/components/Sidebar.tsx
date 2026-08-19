@@ -5,6 +5,7 @@ import {
   Database,
   ClipboardCheck,
   UserCog,
+  Radar,
   Plus,
   Layers,
   Globe,
@@ -118,6 +119,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'repository', name: 'Test Cases', icon: Database },
     { id: 'generator', name: 'AI Test Design', icon: ClipboardCheck },
     { id: 'test-data', name: 'Test Data', icon: UserCog },
+    { id: 'crawler', name: 'Crawler', icon: Radar },
   ];
 
   const getPlatformIcon = (platform: 'web' | 'mobile' | 'api') => {
@@ -137,7 +139,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {!isCollapsed && (
           <div className="brand-meta">
             <span className="brand-name">Forge</span>
-            <span className="brand-subtitle">AI TEST CASE GENERATION</span>
+            <span className="brand-subtitle"></span>
           </div>
         )}
         <button

@@ -4,7 +4,7 @@
 // same env var name as AuthContext.tsx and Executor.tsx - a mismatch here
 // means this file silently keeps calling localhost in production while
 // everything else correctly uses the proxy.
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+export const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 export const apiService = {
   /**
@@ -426,6 +426,96 @@ export const apiService = {
     const response = await fetch(`${BASE_URL}/test-data/batches/${batchId}`, { method: 'DELETE', credentials: 'include' });
     if (!response.ok) throw new Error(`Failed to delete synthetic batch: ${response.status}`);
     return response.json();
+  },
+
+  // ── Crawler Agent ──────────────────────────────────────────────────────
+  // Exhaustive same-origin crawl: every interactive element's id/class/name/
+  // selector, plus a full-page screenshot, for every page it can reach — no
+  // user-set page limit (see CRAWL_HARD_PAGE_CAP in crawler.py for the
+  // internal safety ceiling). Kept deliberately separate from the Coverage
+  // Index scout endpoints above.
+
+  startCrawl: async (appId: string): Promise<any> => {
+    const response = await fetch(`${BASE_URL}/apps/${appId}/crawler/start`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || `Failed to start crawl: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  stopCrawl: async (appId: string): Promise<any> => {
+    const response = await fetch(`${BASE_URL}/apps/${appId}/crawler/stop`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || `Failed to stop crawl: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  listCrawlSessions: async (appId: string): Promise<any> => {
+    const response = await fetch(`${BASE_URL}/apps/${appId}/crawler/sessions`, { credentials: 'include' });
+    if (!response.ok) throw new Error(`Failed to list crawl sessions: ${response.status}`);
+    return response.json();
+  },
+
+  getCrawlSession: async (appId: string, sessionId: string): Promise<any> => {
+    const response = await fetch(`${BASE_URL}/apps/${appId}/crawler/sessions/${sessionId}`, { credentials: 'include' });
+    if (!response.ok) throw new Error(`Failed to load crawl session: ${response.status}`);
+    return response.json();
+  },
+
+  getCrawlPage: async (appId: string, pageId: string): Promise<any> => {
+    const response = await fetch(`${BASE_URL}/apps/${appId}/crawler/pages/${pageId}`, { credentials: 'include' });
+    if (!response.ok) throw new Error(`Failed to load crawled page: ${response.status}`);
+    return response.json();
+  },
+
+  updateCrawlPageElements: async (appId: string, pageId: string, elements: any[]): Promise<any> => {
+    const response = await fetch(`${BASE_URL}/apps/${appId}/crawler/pages/${pageId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ elements }),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || `Failed to save edited elements: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  recrawlPage: async (appId: string, pageId: string): Promise<any> => {
+    const response = await fetch(`${BASE_URL}/apps/${appId}/crawler/pages/${pageId}/recrawl`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || `Recrawl failed: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  /** Triggers a browser download of the full session (all pages + elements) as one JSON file. */
+  exportCrawlSession: async (appId: string, sessionId: string): Promise<void> => {
+    const response = await fetch(`${BASE_URL}/apps/${appId}/crawler/sessions/${sessionId}/export`, { credentials: 'include' });
+    if (!response.ok) throw new Error(`Export failed: ${response.status}`);
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `crawl_${sessionId}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
   },
 
   // ── Test Data: Preview (shows what values would actually be used) ──────────

@@ -323,7 +323,7 @@ export const TestDataManager: React.FC = () => {
 
   const pillBtnActive: React.CSSProperties = {
     ...pillBtn,
-    background: 'var(--accent-purple)', color: '#141c30',
+    background: 'var(--accent-purple)', color: '#FFFFFF',
     border: '1px solid var(--accent-purple)',
   };
 
@@ -331,7 +331,7 @@ export const TestDataManager: React.FC = () => {
     width: '100%', padding: '14px',
     borderRadius: '10px', border: 'none',
     background: disabled ? 'var(--text-muted)' : 'var(--accent-purple)',
-    color: '#141c30', fontWeight: 700, fontSize: '0.9rem',
+    color: '#FFFFFF', fontWeight: 700, fontSize: '0.9rem',
     cursor: disabled ? 'not-allowed' : 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
     marginTop: '0.5rem',
@@ -474,7 +474,7 @@ export const TestDataManager: React.FC = () => {
                           ...pillBtn,
                           padding: '4px 12px', fontSize: '0.75rem',
                           background: newTemplateScenario === s ? 'var(--accent-cyan)' : 'var(--bg-card)',
-                          color: newTemplateScenario === s ? '#0a1628' : 'var(--text-muted)',
+                          color: newTemplateScenario === s ? '#FFFFFF' : 'var(--text-muted)',
                           border: `1px solid ${newTemplateScenario === s ? 'var(--accent-cyan)' : 'var(--border-light)'}`,
                         }}
                       >

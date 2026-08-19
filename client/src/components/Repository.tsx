@@ -183,8 +183,8 @@ export const Repository: React.FC<RepositoryProps> = () => {
     <div className="repository-view">
       <div className="view-header-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
         <div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#f1f5f9' }}>Test Case Manager</h1>
-          <p style={{ color: '#94a3b8', marginTop: '0.25rem' }}>Author, maintain, and execute curated test cases for {activeApp?.name || 'your application'}.</p>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#14151A' }}>Test Case Manager</h1>
+          <p style={{ color: '#6B7280', marginTop: '0.25rem' }}>Author, maintain, and execute curated test cases for {activeApp?.name || 'your application'}.</p>
         </div>
         {activeAppId && (
           <div style={{ display: 'flex', gap: '0.75rem' }}>
@@ -205,14 +205,14 @@ export const Repository: React.FC<RepositoryProps> = () => {
         <div className="repository-layout" style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start', minHeight: 'calc(100vh - 160px)' }}>
           
           <div className="repo-folders" style={{ width: '260px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-            <h3 style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.05em', marginBottom: '0.5rem', paddingLeft: '0.5rem' }}>Modules</h3>
+            <h3 style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#6B7280', letterSpacing: '0.05em', marginBottom: '0.5rem', paddingLeft: '0.5rem' }}>Modules</h3>
             {folders.map(folder => (
               <button key={folder} type="button" onClick={() => setActiveFolder(folder)} className={`repo-folder-btn ${activeFolder === folder ? 'active' : ''}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', borderRadius: '8px', border: 'none', background: activeFolder === folder ? 'rgba(0,128,128,0.08)' : 'transparent', cursor: 'pointer', textAlign: 'left', width: '100%' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  {activeFolder === folder ? <FolderOpen size={18} style={{ color: '#2dd4bf' }} /> : <Folder size={18} style={{ color: '#94a3b8' }} />}
-                  <span style={{ fontWeight: activeFolder === folder ? 600 : 500, color: activeFolder === folder ? '#2dd4bf' : '#f1f5f9', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{folder}</span>
+                  {activeFolder === folder ? <FolderOpen size={18} style={{ color: '#0E8F82' }} /> : <Folder size={18} style={{ color: '#6B7280' }} />}
+                  <span style={{ fontWeight: activeFolder === folder ? 600 : 500, color: activeFolder === folder ? '#0E8F82' : '#14151A', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{folder}</span>
                 </div>
-                <span className="folder-count" style={{ fontSize: '0.75rem', background: 'rgba(0,0,0,0.05)', padding: '2px 8px', borderRadius: '20px', fontWeight: 600, color: '#94a3b8' }}>{folder === 'All Modules' ? appTestCases.length : appTestCases.filter(tc => tc.section === folder).length}</span>
+                <span className="folder-count" style={{ fontSize: '0.75rem', background: 'rgba(0,0,0,0.05)', padding: '2px 8px', borderRadius: '20px', fontWeight: 600, color: '#6B7280' }}>{folder === 'All Modules' ? appTestCases.length : appTestCases.filter(tc => tc.section === folder).length}</span>
               </button>
             ))}
           </div>
@@ -220,14 +220,14 @@ export const Repository: React.FC<RepositoryProps> = () => {
           <div className="repo-main" style={{ flex: 1, minWidth: 0 }}>
             <div className="repo-filter-row" style={{ display: 'flex', gap: '1rem', marginBottom: '1.25rem', alignItems: 'center', justifyContent: 'space-between' }}>
               <div className="repo-search-wrapper" style={{ flex: 1, position: 'relative' }}>
-                <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#6B7280' }} />
                 <input type="search" className="input-field" style={{ paddingLeft: '2.5rem', width: '100%', height: '42px', borderRadius: '8px' }} placeholder="Search test cases..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
               </div>
 
               {/* FIXED: Bulk Delete button sits alongside Bulk Execution triggers */}
               {selectedTests.length > 0 && (
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                  <button type="button" className="btn btn-secondary" style={{ height: '42px', padding: '0 1.25rem', borderColor: '#f87171', color: '#f87171' }} onClick={handleBulkDelete}>
+                  <button type="button" className="btn btn-secondary" style={{ height: '42px', padding: '0 1.25rem', borderColor: '#C7402B', color: '#C7402B' }} onClick={handleBulkDelete}>
                     <Trash2 size={15} /> <span style={{ marginLeft: '0.5rem' }}>Delete Selected ({selectedTests.length})</span>
                   </button>
                 </div>
@@ -235,23 +235,23 @@ export const Repository: React.FC<RepositoryProps> = () => {
             </div>
 
             <div className="test-list-grid" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', padding: '0.75rem 1.25rem', borderBottom: '1px solid rgba(148,163,184,0.16)', fontSize: '0.85rem', color: '#94a3b8', gap: '1rem', background: '#101828', borderRadius: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', padding: '0.75rem 1.25rem', borderBottom: '1px solid rgba(148,163,184,0.16)', fontSize: '0.85rem', color: '#6B7280', gap: '1rem', background: '#F3F4F7', borderRadius: '8px' }}>
                 <input type="checkbox" style={{ transform: 'scale(1.15)', cursor: 'pointer' }} checked={selectedTests.length === filteredTestCases.length && filteredTestCases.length > 0} onChange={handleSelectAllToggle} />
                 <span style={{ fontWeight: 600 }}>Select All visible ({filteredTestCases.length})</span>
               </div>
 
               {filteredTestCases.map(tc => (
-                <div key={tc.id} className={`glass-card hoverable test-row-item ${selectedTestCase?.id === tc.id ? 'active-app-border' : ''}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem', cursor: 'pointer', borderRadius: '8px', border: selectedTestCase?.id === tc.id ? '2px solid #2dd4bf' : '1px solid rgba(148,163,184,0.16)', background: '#141c30', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }} onClick={() => setSelectedTestCase(tc)}>
+                <div key={tc.id} className={`glass-card hoverable test-row-item ${selectedTestCase?.id === tc.id ? 'active-app-border' : ''}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem', cursor: 'pointer', borderRadius: '8px', border: selectedTestCase?.id === tc.id ? '2px solid #0E8F82' : '1px solid rgba(148,163,184,0.16)', background: '#FFFFFF', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }} onClick={() => setSelectedTestCase(tc)}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', minWidth: 0 }}>
                     <input type="checkbox" style={{ transform: 'scale(1.15)', cursor: 'pointer' }} checked={selectedTests.includes(tc.id)} onChange={(e) => handleCheckboxToggle(tc.id, e)} onClick={(e) => e.stopPropagation()} />
                     <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                      <span style={{ fontWeight: 700, fontSize: '0.95rem', color: '#f1f5f9', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tc.title}</span>
-                      <span style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.2rem' }}>Focus Module Mapping: {tc.section}</span>
+                      <span style={{ fontWeight: 700, fontSize: '0.95rem', color: '#14151A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tc.title}</span>
+                      <span style={{ fontSize: '0.8rem', color: '#6B7280', marginTop: '0.2rem' }}>Focus Module Mapping: {tc.section}</span>
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <span style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', padding: '2px 8px', borderRadius: '12px', background: tc.priority === 'high' ? 'rgba(248,113,113,0.14)' : 'rgba(251,191,36,0.14)', color: tc.priority === 'high' ? '#f87171' : '#d97706' }}>{tc.priority}</span>
-                    <ChevronRight size={18} style={{ color: '#94a3b8' }} />
+                    <span style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', padding: '2px 8px', borderRadius: '12px', background: tc.priority === 'high' ? 'rgba(248,113,113,0.14)' : 'rgba(251,191,36,0.14)', color: tc.priority === 'high' ? '#C7402B' : '#B4790A' }}>{tc.priority}</span>
+                    <ChevronRight size={18} style={{ color: '#6B7280' }} />
                   </div>
                 </div>
               ))}
@@ -269,34 +269,34 @@ export const Repository: React.FC<RepositoryProps> = () => {
             // you clicked or how far down the page you'd scrolled.
             <div ref={drawerColRef} style={{ width: '460px', flexShrink: 0, position: 'relative' }}>
               <div className="test-details-drawer" style={{
-                width: '460px', background: '#141c30', border: '1px solid rgba(148,163,184,0.16)', padding: '1.5rem',
+                width: '460px', background: '#FFFFFF', border: '1px solid rgba(148,163,184,0.16)', padding: '1.5rem',
                 display: 'flex', flexDirection: 'column', gap: '1.5rem', borderRadius: '12px',
                 boxShadow: '0 10px 30px rgba(0,0,0,0.12)', position: 'fixed', top: '50%',
                 left: drawerLeftPx !== null ? `${drawerLeftPx}px` : undefined,
                 transform: 'translateY(-50%)', maxHeight: '85vh', zIndex: 50,
               }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #1a2338', paddingBottom: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #E7E9EE', paddingBottom: '1rem' }}>
                 <div style={{ maxWidth: '85%' }}>
-                  <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#f1f5f9', lineHeight: '1.3' }}>{selectedTestCase.title}</h3>
-                  <span style={{ display: 'inline-block', fontSize: '0.75rem', fontWeight: 600, background: 'rgba(192,132,252,0.14)', color: '#6b21a8', padding: '2px 8px', borderRadius: '12px', marginTop: '0.5rem' }}>{selectedTestCase.section}</span>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#14151A', lineHeight: '1.3' }}>{selectedTestCase.title}</h3>
+                  <span style={{ display: 'inline-block', fontSize: '0.75rem', fontWeight: 600, background: 'rgba(192,132,252,0.14)', color: '#4E3591', padding: '2px 8px', borderRadius: '12px', marginTop: '0.5rem' }}>{selectedTestCase.section}</span>
                 </div>
-                <button type="button" style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px', borderRadius: '50%' }} onClick={() => setSelectedTestCase(null)}><X size={20} /></button>
+                <button type="button" style={{ background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', padding: '4px', borderRadius: '50%' }} onClick={() => setSelectedTestCase(null)}><X size={20} /></button>
               </div>
 
               <div style={{ flex: 1, overflowY: 'auto', paddingRight: '0.25rem' }}>
-                <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.05em' }}>Steps Hierarchy ({selectedTestCase.steps.length})</span>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#6B7280', letterSpacing: '0.05em' }}>Steps Hierarchy ({selectedTestCase.steps.length})</span>
                 <ul style={{ listStyle: 'none', padding: 0, marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   {selectedTestCase.steps.map((step, idx) => (
-                    <li key={step.id} style={{ background: '#101828', border: '1px solid rgba(148,163,184,0.16)', padding: '1rem', borderRadius: '8px' }}>
-                      <div style={{ color: '#2dd4bf', fontSize: '0.75rem', fontWeight: 700 }}>Step {idx + 1}</div>
-                      <div style={{ color: '#f1f5f9', fontSize: '0.875rem', fontWeight: 600, marginTop: '0.25rem', lineHeight: '1.4' }}>{step.instruction}</div>
-                      <div style={{ color: '#94a3b8', fontSize: '0.8rem', marginTop: '0.25rem' }}>Expected: <span style={{ color: '#059669', fontWeight: 500 }}>{step.expected}</span></div>
+                    <li key={step.id} style={{ background: '#F3F4F7', border: '1px solid rgba(148,163,184,0.16)', padding: '1rem', borderRadius: '8px' }}>
+                      <div style={{ color: '#0E8F82', fontSize: '0.75rem', fontWeight: 700 }}>Step {idx + 1}</div>
+                      <div style={{ color: '#14151A', fontSize: '0.875rem', fontWeight: 600, marginTop: '0.25rem', lineHeight: '1.4' }}>{step.instruction}</div>
+                      <div style={{ color: '#6B7280', fontSize: '0.8rem', marginTop: '0.25rem' }}>Expected: <span style={{ color: '#157F52', fontWeight: 500 }}>{step.expected}</span></div>
                     </li>
                   ))}
                 </ul>
               </div>
 
-              <div style={{ display: 'flex', gap: '0.5rem', borderTop: '1px solid #1a2338', paddingTop: '1rem' }}>
+              <div style={{ display: 'flex', gap: '0.5rem', borderTop: '1px solid #E7E9EE', paddingTop: '1rem' }}>
                 <button type="button" className="btn btn-secondary" style={{ flex: 1, height: '38px' }} onClick={() => handleOpenEditModal(selectedTestCase)}>Edit</button>
                 <button type="button" className="btn btn-danger" style={{ flex: 1.5, height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }} onClick={() => { deleteTestCase(selectedTestCase.id); setSelectedTestCase(null); }}><Trash2 size={14} /> Delete</button>
               </div>
@@ -308,12 +308,12 @@ export const Repository: React.FC<RepositoryProps> = () => {
 
       {/* CREATE / EDIT TEST CASE DIALOG */}
       <dialog ref={addDialogRef} onClick={(e) => { if (e.target === addDialogRef.current) addDialogRef.current?.close(); }}
-        style={{ borderRadius: '16px', border: '1px solid rgba(148,163,184,0.16)', padding: 0, maxWidth: '560px', width: '90vw', boxShadow: '0 25px 50px rgba(0,0,0,0.15)', background: '#141c30' }}>
-        <div style={{ padding: '1.5rem', borderBottom: '1px solid #1a2338', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#f1f5f9' }}>
+        style={{ borderRadius: '16px', border: '1px solid rgba(148,163,184,0.16)', padding: 0, maxWidth: '560px', width: '90vw', boxShadow: '0 25px 50px rgba(0,0,0,0.15)', background: '#FFFFFF' }}>
+        <div style={{ padding: '1.5rem', borderBottom: '1px solid #E7E9EE', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#14151A' }}>
             {editingTestId ? 'Edit Test Case' : 'Create Test Case'}
           </h2>
-          <button type="button" onClick={() => addDialogRef.current?.close()} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '4px', borderRadius: '50%' }}>
+          <button type="button" onClick={() => addDialogRef.current?.close()} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: '4px', borderRadius: '50%' }}>
             <X size={20} />
           </button>
         </div>
@@ -322,7 +322,7 @@ export const Repository: React.FC<RepositoryProps> = () => {
 
           {/* Title */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-            <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Test Case Title *</label>
+            <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#4B4E5A', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Test Case Title *</label>
             <input className="input-field" required value={formTitle} onChange={e => setFormTitle(e.target.value)}
               placeholder="e.g. Login with valid credentials"
               style={{ padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid rgba(148,163,184,0.22)', fontSize: '0.95rem', outline: 'none', width: '100%' }} />
@@ -331,15 +331,15 @@ export const Repository: React.FC<RepositoryProps> = () => {
           {/* Section & Priority row */}
           <div style={{ display: 'flex', gap: '1rem' }}>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Module / Section</label>
+              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#4B4E5A', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Module / Section</label>
               <input className="input-field" value={formSection} onChange={e => setFormSection(e.target.value)}
                 placeholder="e.g. Auth, Checkout"
                 style={{ padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid rgba(148,163,184,0.22)', fontSize: '0.9rem', outline: 'none' }} />
             </div>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Priority</label>
+              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#4B4E5A', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Priority</label>
               <select className="select-field" value={formPriority} onChange={e => setFormPriority(e.target.value as any)}
-                style={{ padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid rgba(148,163,184,0.22)', fontSize: '0.9rem', outline: 'none', background: '#141c30' }}>
+                style={{ padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid rgba(148,163,184,0.22)', fontSize: '0.9rem', outline: 'none', background: '#FFFFFF' }}>
                 <option value="high">High</option>
                 <option value="medium">Medium</option>
                 <option value="low">Low</option>
@@ -349,18 +349,18 @@ export const Repository: React.FC<RepositoryProps> = () => {
 
           {/* Steps */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-            <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#4B4E5A', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Test Steps ({formSteps.length})
             </label>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {formSteps.map((step, idx) => (
-                <div key={idx} style={{ border: '1px solid rgba(148,163,184,0.16)', borderRadius: '10px', padding: '1rem', background: '#101828', position: 'relative' }}>
+                <div key={idx} style={{ border: '1px solid rgba(148,163,184,0.16)', borderRadius: '10px', padding: '1rem', background: '#F3F4F7', position: 'relative' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#2dd4bf' }}>Step {idx + 1}</span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0E8F82' }}>Step {idx + 1}</span>
                     {formSteps.length > 1 && (
                       <button type="button" onClick={() => setFormSteps(prev => prev.filter((_, i) => i !== idx))}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', padding: '2px', borderRadius: '4px', display: 'flex', alignItems: 'center' }}>
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#C7402B', padding: '2px', borderRadius: '4px', display: 'flex', alignItems: 'center' }}>
                         <X size={14} />
                       </button>
                     )}
@@ -370,13 +370,13 @@ export const Repository: React.FC<RepositoryProps> = () => {
                     onChange={e => setFormSteps(prev => prev.map((s, i) => i === idx ? { ...s, instruction: e.target.value } : s))}
                     placeholder="Describe what to do (e.g. Click the login button)"
                     required
-                    style={{ width: '100%', padding: '0.6rem 0.85rem', borderRadius: '6px', border: '1px solid rgba(148,163,184,0.22)', fontSize: '0.875rem', outline: 'none', background: '#141c30', marginBottom: '0.5rem', boxSizing: 'border-box' }}
+                    style={{ width: '100%', padding: '0.6rem 0.85rem', borderRadius: '6px', border: '1px solid rgba(148,163,184,0.22)', fontSize: '0.875rem', outline: 'none', background: '#FFFFFF', marginBottom: '0.5rem', boxSizing: 'border-box' }}
                   />
                   <input
                     value={step.expected}
                     onChange={e => setFormSteps(prev => prev.map((s, i) => i === idx ? { ...s, expected: e.target.value } : s))}
                     placeholder="Expected result (e.g. User is redirected to dashboard)"
-                    style={{ width: '100%', padding: '0.6rem 0.85rem', borderRadius: '6px', border: '1px solid rgba(148,163,184,0.22)', fontSize: '0.875rem', outline: 'none', background: '#141c30', boxSizing: 'border-box' }}
+                    style={{ width: '100%', padding: '0.6rem 0.85rem', borderRadius: '6px', border: '1px solid rgba(148,163,184,0.22)', fontSize: '0.875rem', outline: 'none', background: '#FFFFFF', boxSizing: 'border-box' }}
                   />
                 </div>
               ))}
@@ -384,22 +384,22 @@ export const Repository: React.FC<RepositoryProps> = () => {
               {/* Add step button */}
               <button type="button"
                 onClick={() => setFormSteps(prev => [...prev, { instruction: '', expected: '' }])}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.65rem', borderRadius: '8px', border: '1.5px dashed rgba(148,163,184,0.22)', background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, transition: 'all 0.15s' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#2dd4bf'; (e.currentTarget as HTMLButtonElement).style.color = '#2dd4bf'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(148,163,184,0.22)'; (e.currentTarget as HTMLButtonElement).style.color = '#94a3b8'; }}>
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.65rem', borderRadius: '8px', border: '1.5px dashed rgba(148,163,184,0.22)', background: 'transparent', color: '#6B7280', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, transition: 'all 0.15s' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#0E8F82'; (e.currentTarget as HTMLButtonElement).style.color = '#0E8F82'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(148,163,184,0.22)'; (e.currentTarget as HTMLButtonElement).style.color = '#6B7280'; }}>
                 <Plus size={16} /> Add Another Step
               </button>
             </div>
           </div>
 
           {/* Actions */}
-          <div style={{ display: 'flex', gap: '0.75rem', paddingTop: '0.5rem', borderTop: '1px solid #1a2338' }}>
+          <div style={{ display: 'flex', gap: '0.75rem', paddingTop: '0.5rem', borderTop: '1px solid #E7E9EE' }}>
             <button type="button" onClick={() => addDialogRef.current?.close()}
-              style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(148,163,184,0.16)', background: '#101828', color: '#cbd5e1', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}>
+              style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(148,163,184,0.16)', background: '#F3F4F7', color: '#4B4E5A', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}>
               Cancel
             </button>
             <button type="submit"
-              style={{ flex: 2, padding: '0.75rem', borderRadius: '8px', border: 'none', background: '#2dd4bf', color: '#141c30', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem' }}>
+              style={{ flex: 2, padding: '0.75rem', borderRadius: '8px', border: 'none', background: '#0E8F82', color: '#FFFFFF', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem' }}>
               {editingTestId ? 'Save Changes' : 'Create Test Case'}
             </button>
           </div>

@@ -14,6 +14,7 @@ import app.routers.auth as auth
 from app.routers import test_data
 from app.services.media_storage import MEDIA_ROOT
 from app.routers import scout
+from app.routers import crawler
 
 # Trimmed on purpose for this generation-only build: no Execution Lab
 # (execute.py), no Knowledge Space (knowledge.py), no Token & Cost or Admin
@@ -29,7 +30,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5174", "http://localhost:8002"],  
+    allow_origins=["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],  
     allow_headers=["*"],  
@@ -50,6 +51,7 @@ app.include_router(generate.router)
 app.include_router(dashboard.router)
 app.include_router(test_data.router)
 app.include_router(scout.router)
+app.include_router(crawler.router)
 
 # Serve execution screenshots/videos as static files at /media/...
 app.mount("/media", StaticFiles(directory=MEDIA_ROOT), name="media")
