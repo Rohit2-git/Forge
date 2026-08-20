@@ -503,6 +503,15 @@ export const apiService = {
     return response.json();
   },
 
+  /** Fetches the full session export payload (all pages + elements) as JSON, without
+   * triggering a download — used to build the "Export as Text" file client-side without
+   * an N+1 fetch per page. exportCrawlSession (below) still handles the JSON download. */
+  fetchCrawlSessionExportData: async (appId: string, sessionId: string): Promise<any> => {
+    const response = await fetch(`${BASE_URL}/apps/${appId}/crawler/sessions/${sessionId}/export`, { credentials: 'include' });
+    if (!response.ok) throw new Error(`Export failed: ${response.status}`);
+    return response.json();
+  },
+
   /** Triggers a browser download of the full session (all pages + elements) as one JSON file. */
   exportCrawlSession: async (appId: string, sessionId: string): Promise<void> => {
     const response = await fetch(`${BASE_URL}/apps/${appId}/crawler/sessions/${sessionId}/export`, { credentials: 'include' });
