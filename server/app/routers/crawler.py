@@ -14,6 +14,8 @@ Endpoints:
   GET    /apps/{app_id}/crawler/sessions/{session_id}/export  full session as one downloadable JSON file
 """
 import json
+import logging
+import traceback
 from datetime import datetime
 from typing import Optional
 
@@ -33,6 +35,7 @@ from app.services.crawl_storage import save_crawl_screenshot
 from app.routers.scout import _resolve_login_fields  # reuse the same Test Data lookup the scout uses
 
 router = APIRouter(prefix="/apps", tags=["crawler"])
+logger = logging.getLogger("crawler.router")
 
 
 def _serialize_session(session, pages=None) -> dict:
@@ -94,25 +97,52 @@ async def _run_and_persist_crawl(session_id: str, app_id: str, base_url: str):
                 print(f"[Crawler] screenshot save failed: {e}")
 
         elements = page_result.get("elements") or []
-        await db.crawlpage.create(data={
-            "sessionId": session_id,
-            "url": page_result["url"],
-            "title": page_result.get("title"),
-            "status": page_result["status"],
-            "errorMessage": page_result.get("errorMessage"),
-            "screenshotPath": screenshot_path,
-            "elements": json.dumps(elements),
-            "elementCount": len(elements),
-        })
-        # Live progress — the frontend polls the session endpoint while
-        # status == "running" to show pages/elements found so far.
-        await db.crawlsession.update(
-            where={"id": session_id},
-            data={
-                "pagesCrawled": {"increment": 1},
-                "totalElements": {"increment": len(elements)},
-            },
-        )
+
+        # NOTE: these two DB writes previously had zero error handling. If
+        # either one threw (a Prisma validation error on an odd field, a
+        # transient DB connection hiccup, a value too long for a column,
+        # etc.) the exception propagated up through crawl_application(),
+        # got caught by crawler.py's per-page catch-all/timeout wrapper two
+        # layers up, and surfaced only as a generic "Page processing timed
+        # out or crashed" — with no indication it was actually a DB write
+        # failing. Wrapping it here with full traceback logging makes that
+        # failure mode diagnosable instead of silently absorbed. We still
+        # re-raise so the existing upstream handling (mark page/crawl as
+        # failed, move on) is unchanged — this only adds visibility.
+        try:
+            await db.crawlpage.create(data={
+                "sessionId": session_id,
+                "url": page_result["url"],
+                "title": page_result.get("title"),
+                "status": page_result["status"],
+                "errorMessage": page_result.get("errorMessage"),
+                "screenshotPath": screenshot_path,
+                "elements": json.dumps(elements),
+                "elementCount": len(elements),
+            })
+        except Exception:
+            logger.error(
+                "[Crawler] crawlpage.create failed — sessionId=%s url=%s\n%s",
+                session_id, page_result.get("url"), traceback.format_exc(),
+            )
+            raise
+
+        try:
+            # Live progress — the frontend polls the session endpoint while
+            # status == "running" to show pages/elements found so far.
+            await db.crawlsession.update(
+                where={"id": session_id},
+                data={
+                    "pagesCrawled": {"increment": 1},
+                    "totalElements": {"increment": len(elements)},
+                },
+            )
+        except Exception:
+            logger.error(
+                "[Crawler] crawlsession.update (progress) failed — sessionId=%s url=%s\n%s",
+                session_id, page_result.get("url"), traceback.format_exc(),
+            )
+            raise
 
     try:
         summary = await crawl_application(base_url, on_page, login_fields=login_fields, cancel_event=cancel_event)

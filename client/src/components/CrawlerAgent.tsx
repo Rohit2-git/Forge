@@ -6,7 +6,7 @@ import {
   Radar, Play, Square, RefreshCw, X, Save, ImageOff, AlertTriangle,
   CheckCircle2, Clock, Layers, MousePointerClick, ExternalLink, History,
   Search, FileJson, FileText, Code2, LayoutGrid, MousePointer2, TextCursorInput,
-  Link2, ClipboardList, ChevronRight
+  Link2, ClipboardList, ChevronRight, ChevronDown
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -52,6 +52,80 @@ const TAG_META: Record<string, { icon: React.ElementType; color: string }> = {
 };
 const tagMeta = (tag: string) => TAG_META[tag] || { icon: MousePointer2, color: '#94a3b8' };
 
+// ─────────────────────────────────────────────────────────────────────────
+// Page display names — derived from the URL, not document.title.
+//
+// Plenty of real sites (SauceDemo included) never change <title> across
+// routes — every page is literally "Swag Labs" — so using page.title as the
+// list label makes an Explorer with more than one page unreadable: every
+// row looks identical and there's no way to tell the inventory page apart
+// from three different product-detail pages. Build a name from the URL
+// path instead ("Homepage", "Inventory", "Inventory Item"), and when two+
+// pages still collapse to the same path label (e.g. three product-detail
+// pages that only differ by a ?id= query), disambiguate with the id if one
+// exists, or fall back to numbering them in crawl order.
+// ─────────────────────────────────────────────────────────────────────────
+const _humanizeSegment = (seg: string): string => {
+  const noExt = seg.replace(/\.(html?|php|aspx?|jsp)$/i, '');
+  const spaced = decodeURIComponent(noExt)
+    .replace(/[-_]+/g, ' ')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2');
+  return spaced
+    .split(' ')
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+};
+
+const _basePathLabel = (rawUrl: string): string => {
+  let u: URL;
+  try { u = new URL(rawUrl); } catch { return 'Page'; }
+  const segments = u.pathname.split('/').filter(Boolean);
+  if (segments.length === 0) return 'Homepage';
+  const label = segments.map(_humanizeSegment).filter(Boolean).join(' \u203A ');
+  return label || 'Homepage';
+};
+
+// Query params commonly used as a record identifier — surfaced in the
+// disambiguated name ("Inventory Item (4)") in preference to blind
+// numbering, since it actually tells you which item this page is.
+const _ID_QUERY_KEYS = ['id', 'productid', 'product_id', 'sku', 'itemid', 'item_id'];
+
+const _queryIdHint = (rawUrl: string): string | null => {
+  try {
+    const u = new URL(rawUrl);
+    for (const key of _ID_QUERY_KEYS) {
+      const val = u.searchParams.get(key);
+      if (val) return val;
+    }
+  } catch { /* ignore */ }
+  return null;
+};
+
+const computePageDisplayNames = (pages: any[]): Map<string, string> => {
+  const base = pages.map((p: any) => ({ id: p.id, label: _basePathLabel(p.url || ''), idHint: _queryIdHint(p.url || '') }));
+  const counts = new Map<string, number>();
+  base.forEach((b) => counts.set(b.label, (counts.get(b.label) || 0) + 1));
+
+  const seenOrder = new Map<string, number>();
+  const result = new Map<string, string>();
+  base.forEach((b) => {
+    const total = counts.get(b.label) || 1;
+    if (total <= 1) {
+      result.set(b.id, b.label);
+      return;
+    }
+    if (b.idHint) {
+      result.set(b.id, `${b.label} (${b.idHint})`);
+      return;
+    }
+    const n = (seenOrder.get(b.label) || 0) + 1;
+    seenOrder.set(b.label, n);
+    result.set(b.id, `${b.label} ${n}`);
+  });
+  return result;
+};
+
 const formatPagesAsText = (pages: any[]): string => {
   return pages.map((p: any) => {
     const elLines = (p.elements || []).map((el: any) => {
@@ -92,28 +166,81 @@ const PageThumb: React.FC<{ path: string | null; alt: string; height?: string }>
   );
 };
 
+// A single attribute row in the expanded detail view — label + value, only
+// rendered when the element actually has that field set.
+const DetailRow: React.FC<{ label: string; value?: string | null }> = ({ label, value }) => {
+  if (!value) return null;
+  return (
+    <div style={{ display: 'flex', gap: '0.5rem', padding: '3px 0' }}>
+      <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#64748b', width: '92px', flexShrink: 0, textTransform: 'uppercase', letterSpacing: '0.03em' }}>{label}</span>
+      <span style={{ fontSize: '0.76rem', color: '#cbd5e1', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', wordBreak: 'break-word' }}>{value}</span>
+    </div>
+  );
+};
+
 // A single captured element, shown as a scannable row instead of a JSON blob.
+// Collapsed: tag + label + up to 3-4 identifying pills (id, class, and
+// type/role — whichever this element actually has) so you can tell what it
+// is at a glance without opening anything. Click the row to expand it in
+// place and see the rest of what was captured for THIS element specifically
+// (role, type, aria-label, placeholder, href, value, data-testid, visible,
+// full selector) — a scoped alternative to the page-wide "Edit as JSON"
+// view for when you just want to inspect one element, not edit the batch.
 const ElementCard: React.FC<{ el: CrawledElement }> = ({ el }) => {
+  const [expanded, setExpanded] = useState(false);
   const meta = tagMeta(el.tag);
   const Icon = meta.icon;
+  const thirdPill = el.type || el.role || null;
+  const thirdPillKind = el.type ? 'type' : el.role ? 'role' : null;
+
   return (
-    <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'flex-start', padding: '0.55rem 0.7rem', background: '#101828', border: '1px solid rgba(148,163,184,0.14)', borderRadius: '8px' }}>
-      <div style={{ width: '26px', height: '26px', borderRadius: '6px', background: `${meta.color}1a`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '1px' }}>
-        <Icon size={14} style={{ color: meta.color }} />
-      </div>
-      <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: '3px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.68rem', fontWeight: 800, color: meta.color, textTransform: 'uppercase', letterSpacing: '0.03em' }}>{el.tag}</span>
-          <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {el.label || el.name || el.id || '(no label)'}
-          </span>
+    <div style={{ background: '#101828', border: '1px solid rgba(148,163,184,0.14)', borderRadius: '8px', overflow: 'hidden' }}>
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        style={{ width: '100%', display: 'flex', gap: '0.6rem', alignItems: 'flex-start', padding: '0.55rem 0.7rem', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+      >
+        <div style={{ width: '26px', height: '26px', borderRadius: '6px', background: `${meta.color}1a`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '1px' }}>
+          <Icon size={14} style={{ color: meta.color }} />
         </div>
-        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-          {el.id && <span style={{ fontSize: '0.68rem', color: '#a5b4fc', background: 'rgba(129,140,248,0.12)', padding: '1px 6px', borderRadius: '4px', fontFamily: 'monospace' }}>id={el.id}</span>}
-          {el.className && <span style={{ fontSize: '0.68rem', color: '#94a3b8', background: 'rgba(148,163,184,0.1)', padding: '1px 6px', borderRadius: '4px', fontFamily: 'monospace', maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>class={el.className}</span>}
+        <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: '3px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.68rem', fontWeight: 800, color: meta.color, textTransform: 'uppercase', letterSpacing: '0.03em' }}>{el.tag}</span>
+            <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {el.label || el.name || el.id || '(no label)'}
+            </span>
+          </div>
+          {/* Up to 3 identifying pills by default — id, class, and type/role
+              (whichever this element has) — the fields most useful for
+              recognizing "which element is this" and for dev/test work. */}
+          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+            {el.id && <span style={{ fontSize: '0.68rem', color: '#a5b4fc', background: 'rgba(129,140,248,0.12)', padding: '1px 6px', borderRadius: '4px', fontFamily: 'monospace' }}>id={el.id}</span>}
+            {el.className && <span style={{ fontSize: '0.68rem', color: '#94a3b8', background: 'rgba(148,163,184,0.1)', padding: '1px 6px', borderRadius: '4px', fontFamily: 'monospace', maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>class={el.className}</span>}
+            {thirdPill && <span style={{ fontSize: '0.68rem', color: '#fbbf24', background: 'rgba(251,191,36,0.1)', padding: '1px 6px', borderRadius: '4px', fontFamily: 'monospace' }}>{thirdPillKind}={thirdPill}</span>}
+          </div>
+          <span style={{ fontSize: '0.68rem', color: '#64748b', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{el.selector}</span>
         </div>
-        <span style={{ fontSize: '0.68rem', color: '#64748b', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{el.selector}</span>
-      </div>
+        <ChevronDown size={14} style={{ color: '#64748b', flexShrink: 0, marginTop: '4px', transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />
+      </button>
+
+      {expanded && (
+        <div style={{ padding: '0.2rem 0.7rem 0.7rem 2.9rem', borderTop: '1px solid rgba(148,163,184,0.1)' }}>
+          <DetailRow label="Label" value={el.label} />
+          <DetailRow label="Id" value={el.id} />
+          <DetailRow label="Class" value={el.className} />
+          <DetailRow label="Name" value={(el as any).name} />
+          <DetailRow label="Role" value={el.role} />
+          <DetailRow label="Type" value={el.type} />
+          <DetailRow label="Aria-label" value={(el as any).ariaLabel} />
+          <DetailRow label="Placeholder" value={(el as any).placeholder} />
+          <DetailRow label="Href" value={(el as any).href} />
+          <DetailRow label="Value" value={(el as any).value} />
+          <DetailRow label="Data-testid" value={(el as any).dataTestId} />
+          <DetailRow label="Selector" value={el.selector} />
+          <DetailRow label="Visible" value={(el as any).visible === false ? 'false' : (el as any).visible === true ? 'true' : null} />
+          <DetailRow label="Crawl id" value={(el as any).crawlId} />
+        </div>
+      )}
     </div>
   );
 };
@@ -130,6 +257,7 @@ const CrawlExplorer: React.FC<{
   onSessionRefresh: () => void;
 }> = ({ appId, session, onClose, onSessionRefresh }) => {
   const pages = session.pages || [];
+  const displayNames = useMemo(() => computePageDisplayNames(pages), [pages]);
   const [query, setQuery] = useState('');
   const [selectedPageId, setSelectedPageId] = useState<string | null>(pages[0]?.id || null);
   const [pageDetail, setPageDetail] = useState<CrawlPage | null>(null);
@@ -144,8 +272,12 @@ const CrawlExplorer: React.FC<{
   const filteredPages = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return pages;
-    return pages.filter((p: any) => (p.title || '').toLowerCase().includes(q) || (p.url || '').toLowerCase().includes(q));
-  }, [pages, query]);
+    return pages.filter((p: any) =>
+      (p.title || '').toLowerCase().includes(q) ||
+      (p.url || '').toLowerCase().includes(q) ||
+      (displayNames.get(p.id) || '').toLowerCase().includes(q)
+    );
+  }, [pages, query, displayNames]);
 
   const loadPageDetail = async (pageId: string) => {
     setLoadingDetail(true);
@@ -274,6 +406,7 @@ const CrawlExplorer: React.FC<{
               )}
               {filteredPages.map((p: any) => {
                 const isActive = p.id === selectedPageId;
+                const name = displayNames.get(p.id) || p.title || 'Untitled';
                 return (
                   <button
                     key={p.id}
@@ -287,10 +420,10 @@ const CrawlExplorer: React.FC<{
                     }}
                   >
                     <div style={{ width: '38px', height: '30px', borderRadius: '4px', overflow: 'hidden', flexShrink: 0 }}>
-                      <PageThumb path={p.screenshotPath} alt={p.title || p.url} height="30px" />
+                      <PageThumb path={p.screenshotPath} alt={name} height="30px" />
                     </div>
                     <div style={{ minWidth: 0, flex: 1 }}>
-                      <div style={{ fontSize: '0.78rem', fontWeight: 600, color: isActive ? '#e2e8f0' : '#cbd5e1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title || 'Untitled'}</div>
+                      <div style={{ fontSize: '0.78rem', fontWeight: 600, color: isActive ? '#e2e8f0' : '#cbd5e1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
                       <div style={{ fontSize: '0.66rem', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.elementCount} elements{p.status === 'failed' ? ' · failed' : ''}</div>
                     </div>
                     {p.status === 'failed' && <AlertTriangle size={12} style={{ color: '#f87171', flexShrink: 0 }} />}
@@ -306,8 +439,13 @@ const CrawlExplorer: React.FC<{
             {!loadingDetail && pageDetail && (
               <>
                 <div>
-                  <div style={{ fontSize: '1rem', fontWeight: 700, color: '#f1f5f9' }}>{pageDetail.title || 'Untitled Page'}</div>
-                  <a href={pageDetail.url} target="_blank" rel="noreferrer" style={{ fontSize: '0.75rem', color: '#818cf8', display: 'inline-flex', alignItems: 'center', gap: '4px', textDecoration: 'none' }}>
+                  <div style={{ fontSize: '1rem', fontWeight: 700, color: '#f1f5f9' }}>
+                    {(selectedPageId && displayNames.get(selectedPageId)) || pageDetail.title || 'Untitled Page'}
+                  </div>
+                  {selectedPageId && pageDetail.title && displayNames.get(selectedPageId) && displayNames.get(selectedPageId) !== pageDetail.title && (
+                    <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '1px' }}>Page title: {pageDetail.title}</div>
+                  )}
+                  <a href={pageDetail.url} target="_blank" rel="noreferrer" style={{ fontSize: '0.75rem', color: '#818cf8', display: 'inline-flex', alignItems: 'center', gap: '4px', textDecoration: 'none', marginTop: '2px' }}>
                     {pageDetail.url} <ExternalLink size={11} />
                   </a>
                 </div>

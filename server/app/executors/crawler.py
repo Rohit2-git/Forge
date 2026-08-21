@@ -43,6 +43,11 @@ from app.executors.playwright import _attempt_login
 CRAWL_HARD_PAGE_CAP = 300
 CRAWL_HARD_DURATION_SEC = 20 * 60  # 20 minutes wall-clock
 _MAX_EXPLORE_CLICKS_PER_PAGE = 15
+# One page hanging (slow XHR polling, a modal that never settles, a click
+# that spawns a popup Playwright waits on, etc.) must never be able to eat
+# the crawl's entire time budget or wedge the loop indefinitely — cap the
+# combined "visit + extract + click-explore" work for a single URL.
+_PER_PAGE_HARD_TIMEOUT_SEC = 60
 
 # Non-content link schemes/extensions we don't want clogging the queue.
 _SKIP_HREF_PREFIXES = ("mailto:", "tel:", "javascript:", "#")
@@ -294,15 +299,21 @@ async def _crawl_application(
                 except Exception as e:
                     print(f"[Crawler] auth bootstrap failed: {e}")
 
-            while queue and pages_scanned < CRAWL_HARD_PAGE_CAP and (_time.time() - start) < CRAWL_HARD_DURATION_SEC:
-                if cancel_event is not None and cancel_event.is_set():
-                    break
-                url = queue.pop(0)
-                norm = _normalize_url(url)
-                if norm in visited:
-                    continue
-                visited.add(norm)
-
+            # ── Per-URL worker ───────────────────────────────────────────
+            # Pulled out of the while-loop body so it can be wrapped in a
+            # hard timeout (below) and a catch-all except. Previously an
+            # unhandled exception ANYWHERE in here — a DB write inside
+            # on_page() raising on an odd title/URL, a click hanging a
+            # popup tab open, an evaluate() throwing on a page with a
+            # locked-down CSP — propagated straight out of the while loop
+            # and killed the entire crawl, which is exactly what "stops
+            # after 3-4 pages and won't go deeper" looks like from the
+            # outside: not a queueing bug, a single-page failure taking
+            # the whole run down with it. One bad page must never be able
+            # to do that; it should be skipped/marked failed and the crawl
+            # should keep going.
+            async def _process_page_url(url: str):
+                nonlocal pages_scanned
                 new_links = await visit_and_report(page, url)
                 pages_scanned += 1
                 queue.extend(new_links)
@@ -321,82 +332,133 @@ async def _crawl_application(
                 # built this way (e.g. saucedemo.com's Backbone.js routing).
                 # Anchors with a real, followable href are still excluded
                 # here since visit_and_report() above already queues those.
-                if pages_scanned < CRAWL_HARD_PAGE_CAP:
+                if pages_scanned >= CRAWL_HARD_PAGE_CAP:
+                    return
+                try:
+                    clickable = await page.evaluate(
+                        "() => Array.from(document.querySelectorAll('[data-crawl-id]'))"
+                        ".filter(el => {"
+                        "  const tag = el.tagName.toLowerCase();"
+                        "  if (tag !== 'a') return true;"
+                        "  const href = (el.getAttribute('href') || '').trim();"
+                        "  return href === '' || href === '#';"
+                        "})"
+                        ".slice(0, 40).map(el => el.getAttribute('data-crawl-id'))"
+                    )
+                except Exception:
+                    clickable = []
+                before_url = page.url
+                for crawl_id in (clickable or [])[:_MAX_EXPLORE_CLICKS_PER_PAGE]:
+                    if cancel_event is not None and cancel_event.is_set():
+                        break
+                    if pages_scanned >= CRAWL_HARD_PAGE_CAP:
+                        break
                     try:
-                        clickable = await page.evaluate(
-                            "() => Array.from(document.querySelectorAll('[data-crawl-id]'))"
-                            ".filter(el => {"
-                            "  const tag = el.tagName.toLowerCase();"
-                            "  if (tag !== 'a') return true;"
-                            "  const href = (el.getAttribute('href') || '').trim();"
-                            "  return href === '' || href === '#';"
-                            "})"
-                            ".slice(0, 40).map(el => el.getAttribute('data-crawl-id'))"
-                        )
-                    except Exception:
-                        clickable = []
-                    before_url = page.url
-                    for crawl_id in (clickable or [])[:_MAX_EXPLORE_CLICKS_PER_PAGE]:
-                        if cancel_event is not None and cancel_event.is_set():
-                            break
-                        if pages_scanned >= CRAWL_HARD_PAGE_CAP:
-                            break
+                        locator = page.locator(f'[data-crawl-id="{crawl_id}"]')
+                        if await locator.count() == 0:
+                            continue
+                        # target="_blank"-style links open a new tab rather
+                        # than navigating `page` itself — page.url below
+                        # would then never change, the click would look like
+                        # a no-op, and the orphaned tab would sit open
+                        # consuming a browser process for the rest of the
+                        # crawl. Track tab count and clean up if one appears.
+                        pages_before_click = len(context.pages)
+                        await locator.first.click(timeout=2000)
                         try:
-                            locator = page.locator(f'[data-crawl-id="{crawl_id}"]')
-                            if await locator.count() == 0:
-                                continue
-                            await locator.first.click(timeout=2000)
-                            try:
-                                await page.wait_for_load_state("networkidle", timeout=3000)
-                            except Exception:
-                                pass
-                            after_url = page.url
-                            navigated = after_url != before_url
-                            is_new = navigated and _normalize_url(after_url) not in visited and _normalize_url(after_url) not in queued
-                            if is_new:
-                                queue.append(after_url)
-                                queued.add(_normalize_url(after_url))
-                            if navigated:
-                                # Restore so the next candidate click starts clean —
-                                # this must run for ANY navigation, not just newly
-                                # discovered pages. Two elements on the same page
-                                # (e.g. a product's image link and its title link)
-                                # very commonly point at the SAME target — the
-                                # second one to be clicked "navigates" but isn't a
-                                # new discovery, and previously fell into the
-                                # no-restore branch below meant for clicks that
-                                # cause no navigation at all (dropdowns, modals).
-                                # That left the browser sitting on that other page
-                                # for the rest of THIS page's candidate list, and
-                                # every remaining candidate silently found 0
-                                # elements (its data-crawl-id marker only exists
-                                # on the original page's DOM) and got skipped —
-                                # which is exactly why exploration used to die
-                                # after 1-2 candidates instead of trying all of
-                                # them. Restoring on every navigation, duplicate
-                                # target or not, fixes that.
-                                #
-                                # page.goto() is also a full reload, which wipes
-                                # the data-crawl-id markers the initial extraction
-                                # set on this page's elements — re-mark them here
-                                # too, or every later candidate silently no-ops
-                                # the same way.
-                                try:
-                                    await page.goto(before_url, timeout=10000, wait_until="domcontentloaded")
+                            await page.wait_for_load_state("networkidle", timeout=3000)
+                        except Exception:
+                            pass
+                        if len(context.pages) > pages_before_click:
+                            for extra in context.pages:
+                                if extra is not page:
                                     try:
-                                        await page.wait_for_load_state("networkidle", timeout=4000)
+                                        await extra.close()
                                     except Exception:
                                         pass
-                                    await _extract_page_elements_detailed(page, before_url)
-                                except Exception:
-                                    pass
-                            else:
+                        after_url = page.url
+                        navigated = after_url != before_url
+                        is_new = navigated and _normalize_url(after_url) not in visited and _normalize_url(after_url) not in queued
+                        if is_new:
+                            queue.append(after_url)
+                            queued.add(_normalize_url(after_url))
+                        if navigated:
+                            # Restore so the next candidate click starts clean —
+                            # this must run for ANY navigation, not just newly
+                            # discovered pages. Two elements on the same page
+                            # (e.g. a product's image link and its title link)
+                            # very commonly point at the SAME target — the
+                            # second one to be clicked "navigates" but isn't a
+                            # new discovery, and previously fell into the
+                            # no-restore branch below meant for clicks that
+                            # cause no navigation at all (dropdowns, modals).
+                            # That left the browser sitting on that other page
+                            # for the rest of THIS page's candidate list, and
+                            # every remaining candidate silently found 0
+                            # elements (its data-crawl-id marker only exists
+                            # on the original page's DOM) and got skipped —
+                            # which is exactly why exploration used to die
+                            # after 1-2 candidates instead of trying all of
+                            # them. Restoring on every navigation, duplicate
+                            # target or not, fixes that.
+                            #
+                            # page.goto() is also a full reload, which wipes
+                            # the data-crawl-id markers the initial extraction
+                            # set on this page's elements — re-mark them here
+                            # too, or every later candidate silently no-ops
+                            # the same way.
+                            try:
+                                await page.goto(before_url, timeout=10000, wait_until="domcontentloaded")
                                 try:
-                                    await page.keyboard.press("Escape")
+                                    await page.wait_for_load_state("networkidle", timeout=4000)
                                 except Exception:
                                     pass
-                        except Exception:
-                            continue
+                                await _extract_page_elements_detailed(page, before_url)
+                            except Exception:
+                                pass
+                        else:
+                            try:
+                                await page.keyboard.press("Escape")
+                            except Exception:
+                                pass
+                    except Exception:
+                        continue
+
+            while queue and pages_scanned < CRAWL_HARD_PAGE_CAP and (_time.time() - start) < CRAWL_HARD_DURATION_SEC:
+                if cancel_event is not None and cancel_event.is_set():
+                    break
+                url = queue.pop(0)
+                norm = _normalize_url(url)
+                if norm in visited:
+                    continue
+                visited.add(norm)
+
+                scanned_before = pages_scanned
+                try:
+                    await asyncio.wait_for(_process_page_url(url), timeout=_PER_PAGE_HARD_TIMEOUT_SEC)
+                except asyncio.TimeoutError:
+                    print(f"[Crawler] page processing exceeded {_PER_PAGE_HARD_TIMEOUT_SEC}s, skipping and continuing: {url}")
+                except Exception as e:
+                    # Anything unexpected (including a DB error bubbling up
+                    # through on_page) must not end the crawl — report this
+                    # URL as failed if it never got reported, log, and move
+                    # on to the next queued page.
+                    print(f"[Crawler] unhandled error processing {url}, skipping and continuing: {e}")
+                if pages_scanned == scanned_before:
+                    # visit_and_report never got far enough to report+count
+                    # this page (e.g. the timeout hit before it could, or an
+                    # exception hit before the increment) — report it as
+                    # failed so it's still visible in the UI, and count it
+                    # so the crawl's page budget still reflects work done.
+                    try:
+                        await on_page({
+                            "url": url, "title": None, "status": "failed",
+                            "errorMessage": "Page processing timed out or crashed.",
+                            "elements": [], "screenshot_bytes": None,
+                        })
+                    except Exception:
+                        pass
+                    pages_scanned += 1
         finally:
             await context.close()
             await browser.close()
